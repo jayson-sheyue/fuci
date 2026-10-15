@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+.env.*
+*.pem
+*credentials*.json
+session.json
+settings.json

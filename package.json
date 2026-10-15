@@ -1,0 +1,19 @@
+{
+  "name": "fuci",
+  "productName": "浮词",
+  "version": "1.0.0",
+  "private": true,
+  "description": "常驻屏幕的英语 / 日语悬浮词典",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "bash scripts/build-mac-app.sh",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "google-auth-library": "^11.2.0"
+  },
+  "devDependencies": {
+    "electron": "^44.7.0"
+  }
+}

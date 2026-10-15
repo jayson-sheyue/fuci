@@ -1,0 +1,212 @@
+'use strict';
+
+const { spawn, execFileSync } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { httpFetch } = require('./http');
+
+let userData = '';
+let session = null;
+let expired = false;
+let pending = false;
+
+function sessionFile() {
+  return path.join(userData, 'session.json');
+}
+
+function configureSession(dir) {
+  userData = dir;
+  session = null;
+  expired = false;
+  try {
+    const raw = JSON.parse(fs.readFileSync(sessionFile(), 'utf8'));
+    if (!raw || raw.source !== 'gcloud' || typeof raw.accessToken !== 'string' || !raw.expiresAt) {
+      fs.rmSync(sessionFile(), { force: true });
+      return;
+    }
+    if (Date.now() >= Number(raw.expiresAt)) {
+      expired = true;
+      fs.rmSync(sessionFile(), { force: true });
+      return;
+    }
+    session = {
+      accessToken: raw.accessToken,
+      expiresAt: Number(raw.expiresAt),
+      projectId: String(raw.projectId || ''),
+      source: 'gcloud',
+    };
+  } catch {
+    session = null;
+  }
+}
+
+function writeSession() {
+  if (!userData || !session) return;
+  fs.mkdirSync(userData, { recursive: true });
+  fs.writeFileSync(sessionFile(), JSON.stringify({
+    accessToken: session.accessToken,
+    expiresAt: session.expiresAt,
+    projectId: session.projectId,
+    source: 'gcloud',
+  }), { mode: 0o600 });
+}
+
+function dropSession(markExpired) {
+  session = null;
+  if (markExpired) expired = true;
+  if (userData) {
+    try { fs.rmSync(sessionFile(), { force: true }); } catch { /* already gone */ }
+  }
+}
+
+function alignSession(settings) {
+  if (!session) return;
+  if (session.projectId !== String(settings?.projectId || '')) dropSession(true);
+}
+
+function sessionStatus() {
+  if (session && Date.now() >= session.expiresAt) dropSession(true);
+  if (!session) return { signedIn: false, expired, expiresAt: 0 };
+  return { signedIn: true, expired: false, expiresAt: session.expiresAt };
+}
+
+function accessToken(settings) {
+  alignSession(settings);
+  const status = sessionStatus();
+  return status.signedIn ? session.accessToken : '';
+}
+
+function gcloudCandidates() {
+  const home = os.homedir();
+  return [
+    process.env.GCLOUD_BIN,
+    path.join(home, 'google-cloud-sdk/bin/gcloud'),
+    '/opt/homebrew/bin/gcloud',
+    '/usr/local/bin/gcloud',
+    '/opt/homebrew/share/google-cloud-sdk/bin/gcloud',
+    '/usr/local/share/google-cloud-sdk/bin/gcloud',
+  ].filter(Boolean);
+}
+
+function findGcloud() {
+  for (const candidate of gcloudCandidates()) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  try {
+    const found = execFileSync('/bin/zsh', ['-lc', 'command -v gcloud'], {
+      encoding: 'utf8',
+      timeout: 4000,
+    }).trim();
+    if (found && fs.existsSync(found)) return found;
+  } catch {
+    return '';
+  }
+  return '';
+}
+
+function runGcloud(bin, args, { timeoutMs, allowPrompt }) {
+  return new Promise((resolve) => {
+    const child = spawn(bin, args, {
+      env: {
+        ...process.env,
+        PATH: `${path.dirname(bin)}:${process.env.PATH || ''}`,
+        CLOUDSDK_CORE_DISABLE_PROMPTS: allowPrompt ? '0' : '1',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => {
+      child.kill('SIGTERM');
+      resolve({ code: -1, stdout: '', stderr: 'gcloud 超时' });
+    }, timeoutMs);
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      resolve({ code: -1, stdout: '', stderr: error.message || 'gcloud 没有启动' });
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolve({ code: code ?? -1, stdout, stderr });
+    });
+  });
+}
+
+function safeError(stderr) {
+  const text = String(stderr || '')
+    .replace(/ya29\.[A-Za-z0-9._-]+/g, '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith('WARNING:'));
+  return (text[0] || 'gcloud 没有返回访问令牌。').slice(0, 180);
+}
+
+function needsLogin(stderr) {
+  return /auth login|active account|Reauthentication|not logged|no credential|invalid_grant|Please log in|could not be refreshed|There was a problem refreshing/i.test(String(stderr || ''));
+}
+
+async function printAccessToken(bin) {
+  const result = await runGcloud(bin, ['auth', 'print-access-token'], { timeoutMs: 30000, allowPrompt: false });
+  const token = result.stdout.trim();
+  if (result.code === 0 && token && !/\s/.test(token)) return { ok: true, value: token };
+  return {
+    ok: false,
+    needsLogin: needsLogin(result.stderr) || result.code !== 0,
+    message: safeError(result.stderr),
+  };
+}
+
+async function expiryFromToken(token) {
+  try {
+    const response = await httpFetch('https://oauth2.googleapis.com/tokeninfo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ access_token: token }).toString(),
+    });
+    const data = await response.json().catch(() => ({}));
+    const seconds = Number(data.expires_in);
+    if (response.ok && seconds > 0) return Date.now() + Math.max(30, seconds - 15) * 1000;
+  } catch {
+    /* tokeninfo is only used for the countdown */
+  }
+  return Date.now() + (3600 - 15) * 1000;
+}
+
+async function beginLogin(settings) {
+  const projectId = String(settings.projectId || '').trim();
+  if (!projectId) throw new Error('先填写项目 ID。');
+  if (pending) throw new Error('正在登录，请在浏览器里完成 Google 账号登录。');
+  const bin = findGcloud();
+  if (!bin) throw new Error('没有找到 gcloud。请先安装 Google Cloud SDK。');
+  pending = true;
+  try {
+    let printed = await printAccessToken(bin);
+    if (!printed.ok) {
+      const login = await runGcloud(bin, ['auth', 'login', '--brief'], { timeoutMs: 180000, allowPrompt: true });
+      if (login.code !== 0) throw new Error(needsLogin(login.stderr) ? 'Google 登录没有完成。' : safeError(login.stderr));
+      printed = await printAccessToken(bin);
+    }
+    if (!printed.ok) throw new Error(printed.message || '没有拿到访问令牌。');
+    session = {
+      accessToken: printed.value,
+      expiresAt: await expiryFromToken(printed.value),
+      projectId,
+      source: 'gcloud',
+    };
+    expired = false;
+    writeSession();
+    return sessionStatus();
+  } finally {
+    pending = false;
+  }
+}
+
+module.exports = {
+  accessToken,
+  alignSession,
+  beginLogin,
+  configureSession,
+  sessionStatus,
+};
