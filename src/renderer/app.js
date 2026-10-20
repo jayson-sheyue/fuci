@@ -591,11 +591,13 @@ function startAuthClock() {
 function openSettings(message) {
   const boot = state.bootstrap || { settings: {}, shortcutLabel: '' };
   const settings = boot.settings || {};
+  const versionText = String(boot.version || '').trim();
+  const meta = [versionText ? `版本 ${versionText}` : '', boot.shortcutLabel || ''].filter(Boolean).join(' · ');
   state.mode = 'settings';
   state.auth = boot.auth || state.auth;
   syncChrome();
   showBoard(`
-    <div class="kicker"><strong>设置</strong><span>${esc(boot.shortcutLabel || '')}</span></div>
+    <div class="kicker"><strong>设置</strong><span class="meta">${esc(meta)}</span></div>
     <div id="update-offer" class="update-offer" hidden>
       <span class="update-dot"></span>
       <span>有可用更新</span>

@@ -1,6 +1,7 @@
 'use strict';
 
 const { app, BrowserWindow, Menu, Tray, clipboard, dialog, globalShortcut, ipcMain, nativeImage, net, screen } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const { explainGcpError } = require('./errors');
 const { lookup, testConnection, clearAuth, configureLookupCache, flushLookupCache } = require('./gcp');
@@ -261,6 +262,16 @@ function clampPanelOpacity(value) {
   return Math.min(1, Math.max(0.4, Math.round(number * 100) / 100));
 }
 
+function clientVersion() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), 'package.json'), 'utf8'));
+    if (raw.version) return String(raw.version);
+  } catch {
+    /* The bundle version still covers a packaged app whose package.json cannot be read. */
+  }
+  return app.getVersion();
+}
+
 function publicSettings(settings) {
   return {
     projectId: settings.projectId || '',
@@ -297,6 +308,7 @@ function registerIpc() {
       gcloudProject: readGcloudProject(),
       adcFound: adcExists(),
       shortcutLabel,
+      version: clientVersion(),
       maxBoardHeight: maxBoardHeight(),
       update: updateState,
     };

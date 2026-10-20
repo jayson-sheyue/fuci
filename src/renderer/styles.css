@@ -505,6 +505,11 @@ kbd[hidden],
   letter-spacing: 0.12em;
 }
 
+.kicker .meta {
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
 .head-row {
   display: flex;
   align-items: center;
