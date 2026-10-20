@@ -122,6 +122,7 @@ function reportHeight() {
 
 function collapseToOrb() {
   if (orbMode) return;
+  cancelSealDrag();
   orbMode = true;
   clearTimeout(timer);
   shell.classList.add('is-orb');
@@ -856,13 +857,25 @@ input.addEventListener('keydown', (event) => {
 
 function trackDrag(target, enabled) {
   let drag = null;
+  const end = (event) => {
+    if (!drag) return;
+    if (event && event.pointerId !== undefined && event.pointerId !== drag.pointerId) return;
+    const pointerId = drag.pointerId;
+    drag = null;
+    if (target.hasPointerCapture(pointerId)) target.releasePointerCapture(pointerId);
+    window.fuci.setDragging(false);
+  };
   target.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0 || !enabled()) return;
+    if (event.button !== 0 || (event.buttons & 1) === 0 || !enabled()) return;
     drag = { x: event.screenX, y: event.screenY, moved: false, pointerId: event.pointerId };
     target.setPointerCapture(event.pointerId);
   });
   target.addEventListener('pointermove', (event) => {
     if (!drag || event.pointerId !== drag.pointerId) return;
+    if ((event.buttons & 1) === 0) {
+      end(event);
+      return;
+    }
     const dx = event.screenX - drag.x;
     const dy = event.screenY - drag.y;
     if (!drag.moved) {
@@ -874,17 +887,12 @@ function trackDrag(target, enabled) {
     drag.y = event.screenY;
     window.fuci.moveBy(dx, dy);
   });
-  const end = (event) => {
-    if (!drag || event.pointerId !== drag.pointerId) return;
-    drag = null;
-    if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
-    window.fuci.setDragging(false);
-  };
   target.addEventListener('pointerup', end);
   target.addEventListener('pointercancel', end);
+  return end;
 }
 
-trackDrag(seal, () => !orbMode);
+const cancelSealDrag = trackDrag(seal, () => !orbMode);
 trackDrag(orb, () => orbMode);
 seal.addEventListener('dblclick', (event) => {
   event.preventDefault();

@@ -11,6 +11,7 @@ const { synthesize } = require('./tts');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 const { alignSession, beginLogin, configureSession, sessionStatus } = require('./oauth');
 const { setFetchImplementation } = require('./http');
+const { orbHit } = require('./orb-hit');
 const { adcExists, effectiveProjectId, load, normalizeTheme, readGcloudProject, save } = require('./settings');
 
 setFetchImplementation((url, options = {}) => net.fetch(url, {
@@ -37,6 +38,7 @@ let shortcutLabel = '';
 let lookupJob = null;
 let ignoreMouse = false;
 let draggingWindow = false;
+let orbHovering = false;
 let updateState = { available: false };
 let updateTimer = null;
 
@@ -82,7 +84,7 @@ function createWindow() {
     transparent: true,
     alwaysOnTop: true,
     resizable: false,
-    movable: true,
+    movable: false,
     minimizable: false,
     maximizable: false,
     fullscreenable: false,
@@ -477,14 +479,19 @@ function registerIpc() {
   });
 
   function cursorHitsWidget() {
-    if (!win || win.isDestroyed() || !win.isVisible()) return false;
+    if (!win || win.isDestroyed() || !win.isVisible()) {
+      orbHovering = false;
+      return false;
+    }
     const cursor = screen.getCursorScreenPoint();
     const bounds = win.getBounds();
     const x = cursor.x - bounds.x;
     const y = cursor.y - bounds.y;
     if (windowMode === 'orb') {
-      return (x - 58) ** 2 + (y - 58) ** 2 <= 46 * 46;
+      orbHovering = orbHit(x, y, bounds.width, bounds.height, orbHovering);
+      return orbHovering;
     }
+    orbHovering = false;
     const onCapsule = x >= 12 && x <= bounds.width - 12 && y >= 16 && y <= 82;
     const onBoard = bounds.height > 110 && x >= 12 && x <= bounds.width - 12 && y >= 76 && y <= bounds.height - 10;
     return onCapsule || onBoard;

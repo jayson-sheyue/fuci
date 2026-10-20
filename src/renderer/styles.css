@@ -151,6 +151,7 @@ html[data-theme="night"] {
 html, body {
   margin: 0;
   background: transparent;
+  -webkit-app-region: no-drag;
   overflow: hidden;
   overscroll-behavior: none;
   font-family: "SF Pro Text", "PingFang SC", "Hiragino Sans GB", sans-serif;
@@ -164,6 +165,7 @@ button, input, select { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   padding: 22px 18px 26px;
+  -webkit-app-region: no-drag;
 }
 
 #shell.is-orb {
@@ -213,6 +215,7 @@ button, input, select { font: inherit; color: inherit; }
   height: 104px;
   display: block;
   pointer-events: none;
+  -webkit-app-region: no-drag;
 }
 
 .capsule {
