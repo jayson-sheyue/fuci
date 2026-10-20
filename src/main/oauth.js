@@ -77,9 +77,14 @@ function accessToken(settings) {
   return status.signedIn ? session.accessToken : '';
 }
 
+function bundledGcloudPath() {
+  return path.resolve(__dirname, '../../google-cloud-sdk/bin/gcloud');
+}
+
 function gcloudCandidates() {
   const home = os.homedir();
   return [
+    bundledGcloudPath(),
     process.env.GCLOUD_BIN,
     path.join(home, 'google-cloud-sdk/bin/gcloud'),
     '/opt/homebrew/bin/gcloud',
@@ -111,6 +116,8 @@ function runGcloud(bin, args, { timeoutMs, allowPrompt }) {
       env: {
         ...process.env,
         PATH: `${path.dirname(bin)}:${process.env.PATH || ''}`,
+        CLOUDSDK_ROOT_DIR: path.resolve(path.dirname(bin), '..'),
+        CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK: '1',
         CLOUDSDK_CORE_DISABLE_PROMPTS: allowPrompt ? '0' : '1',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -179,7 +186,7 @@ async function beginLogin(settings) {
   if (!projectId) throw new Error('先填写项目 ID。');
   if (pending) throw new Error('正在登录，请在浏览器里完成 Google 账号登录。');
   const bin = findGcloud();
-  if (!bin) throw new Error('没有找到 gcloud。请先安装 Google Cloud SDK。');
+  if (!bin) throw new Error('没有找到 gcloud。安装包里应该带有它；如果这是从源码运行的，请先安装 Google Cloud SDK。');
   pending = true;
   try {
     let printed = await printAccessToken(bin);
@@ -207,6 +214,8 @@ module.exports = {
   accessToken,
   alignSession,
   beginLogin,
+  bundledGcloudPath,
   configureSession,
+  gcloudCandidates,
   sessionStatus,
 };

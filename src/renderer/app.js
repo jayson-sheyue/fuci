@@ -635,7 +635,7 @@ function openSettings(message) {
       </select>
     </label>
     <label class="check"><input id="login-item" type="checkbox" ${settings.openAtLogin ? 'checked' : ''} /><span>登录 macOS 时启动浮词。</span></label>
-    <pre class="help">使用本机 gcloud 的登录状态。账号需要能调用该项目的 Cloud Translation 和 Vertex AI。</pre>
+    <pre class="help">安装包里带有 gcloud，不用另外安装 Google Cloud SDK。一键链接会打开浏览器登录，登录状态保存在本机。账号需要能调用该项目的 Cloud Translation 和 Vertex AI。</pre>
     <div class="actions">
       <button type="button" class="ghost" id="quit-app">退出</button>
       <button type="button" class="ghost" id="restart-app">重启</button>

@@ -84,6 +84,27 @@ if (/^[0-9a-f]{40}$/i.test(commit)) {
 mkdir -p "$APP_DIR/build"
 cp "$ENTITLEMENTS" "$APP_DIR/build/entitlements.mac.plist"
 
+SDK_VERSION="${GCLOUD_VERSION:-589.0.0}"
+SDK_DIR="$ROOT/vendor/google-cloud-sdk"
+if [[ ! -f "$SDK_DIR/.fuci-ready" ]]; then
+  echo "正在下载 Google Cloud CLI ${SDK_VERSION}"
+  mkdir -p "$ROOT/vendor"
+  rm -rf "$SDK_DIR"
+  ARCHIVE="$(mktemp)"
+  curl -fL --retry 3 -o "$ARCHIVE" \
+    "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${SDK_VERSION}-darwin-arm.tar.gz"
+  tar -xzf "$ARCHIVE" -C "$ROOT/vendor"
+  rm -f "$ARCHIVE"
+  CLOUDSDK_CONFIG="$(mktemp -d)"
+  CLOUDSDK_CORE_DISABLE_PROMPTS=1 \
+    CLOUDSDK_CONFIG="$CLOUDSDK_CONFIG" \
+    bash "$SDK_DIR/install.sh" --quiet --usage-reporting false --path-update false --command-completion false
+  rm -rf "$CLOUDSDK_CONFIG"
+  touch "$SDK_DIR/.fuci-ready"
+fi
+rm -rf "$DIST_APP/Contents/Resources/google-cloud-sdk"
+ditto "$SDK_DIR" "$DIST_APP/Contents/Resources/google-cloud-sdk"
+
 rsync -a \
   --exclude electron \
   --exclude electron/ \
