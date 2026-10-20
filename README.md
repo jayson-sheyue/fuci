@@ -4,7 +4,16 @@
 
 ## 下载
 
-在 [GitHub Releases](https://github.com/jayson-sheyue/fuci/releases/latest) 下载 `fuci-版本号-arm64.dmg`。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。第一次如果被系统拦住，在访达里对「浮词」按右键，选择「打开」。
+在 [GitHub Releases](https://github.com/jayson-sheyue/fuci/releases/latest) 下载 `fuci-版本号-arm64.dmg`。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
+
+从浏览器下载的安装包没有苹果公证。第一次打开如果弹出「“浮词” Not Opened」，点 **Done**，不要点 Move to Trash。然后在终端执行：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/浮词.app
+open /Applications/浮词.app
+```
+
+也可以点 Done 之后，打开「系统设置 → 隐私与安全性」，在安全性一栏点「仍要打开」。
 
 ## 启动
 
