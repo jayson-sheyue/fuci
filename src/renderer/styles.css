@@ -220,6 +220,56 @@ kbd {
 #clear { font-size: 18px; line-height: 1; }
 #clear:hover, #collapse:hover, #gear:hover { background: rgba(0, 0, 0, 0.06); color: var(--ink); }
 
+#gear { position: relative; }
+
+.update-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d70015;
+  box-shadow: 0 0 0 1.5px #fff;
+  color: transparent;
+  font-size: 0;
+  overflow: hidden;
+}
+
+.update-dot[hidden] { display: none; }
+
+#gear .update-dot,
+.orb .update-dot {
+  position: absolute;
+  pointer-events: none;
+}
+
+#gear .update-dot { top: 2px; right: 2px; }
+
+.orb .update-dot {
+  top: 16px;
+  right: 18px;
+  z-index: 2;
+  width: 10px;
+  height: 10px;
+}
+
+.update-offer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(215, 0, 21, 0.08);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.update-offer[hidden] { display: none; }
+
+.update-offer .update-dot { position: static; flex: none; }
+
+#apply-update { margin-left: auto; }
+
 .busy[hidden],
 kbd[hidden],
 #clear[hidden] { display: none; }
@@ -583,6 +633,10 @@ rt {
 }
 
 .actions, .auth-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+
+.actions { flex-wrap: wrap; }
+
+#close-settings { margin-left: auto; }
 
 .auth-row { justify-content: space-between; }
 

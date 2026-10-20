@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP_NAME="浮词"
 EXEC_NAME="Fuci"
+VERSION="$(node -p "require('${ROOT}/package.json').version")"
 ELECTRON_APP="$ROOT/node_modules/electron/dist/Electron.app"
 DIST_APP="$ROOT/dist/${APP_NAME}.app"
 DESKTOP_APP="$HOME/Desktop/${APP_NAME}.app"
@@ -43,8 +44,8 @@ PLIST="$DIST_APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable ${EXEC_NAME}" "$PLIST"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.fuci.dictionary" "$PLIST"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile icon" "$PLIST"
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.0" "$PLIST"
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion 1.0.0" "$PLIST"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION}" "$PLIST"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VERSION}" "$PLIST"
 /usr/libexec/PlistBuddy -c "Set :LSApplicationCategoryType public.app-category.utilities" "$PLIST"
 
 APP_DIR="$DIST_APP/Contents/Resources/app"
@@ -64,6 +65,25 @@ fs.writeFileSync(process.argv[2], JSON.stringify({
 }, null, 2));
 ' "$ROOT/package.json" "$APP_DIR/package.json"
 
+node -e '
+const fs = require("fs");
+const { execFileSync } = require("child_process");
+let commit = "";
+try {
+  commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: process.argv[1], encoding: "utf8" }).trim();
+} catch {}
+if (/^[0-9a-f]{40}$/i.test(commit)) {
+  fs.writeFileSync(process.argv[2], JSON.stringify({
+    commit,
+    repo: "jayson-sheyue/fuci",
+    branch: "main",
+  }, null, 2) + "\n");
+}
+' "$ROOT" "$APP_DIR/revision.json"
+
+mkdir -p "$APP_DIR/build"
+cp "$ENTITLEMENTS" "$APP_DIR/build/entitlements.mac.plist"
+
 rsync -a \
   --exclude electron \
   --exclude electron/ \
@@ -81,6 +101,15 @@ ditto "$DIST_APP" "$DESKTOP_APP"
 codesign --force --deep --sign - --entitlements "$ENTITLEMENTS" "$DESKTOP_APP"
 xattr -cr "$DESKTOP_APP" || true
 
+DMG="$ROOT/dist/fuci-${VERSION}-arm64.dmg"
+STAGE="$(mktemp -d)"
+ditto "$DIST_APP" "$STAGE/${APP_NAME}.app"
+ln -s /Applications "$STAGE/Applications"
+rm -f "$DMG"
+hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+rm -rf "$STAGE"
+
 echo "已生成"
 echo "  $DESKTOP_APP"
 echo "  $DIST_APP"
+echo "  $DMG"

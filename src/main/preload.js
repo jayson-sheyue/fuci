@@ -17,6 +17,10 @@ contextBridge.exposeInMainWorld('fuci', {
   moveBy: (dx, dy) => ipcRenderer.send('window:move-by', dx, dy),
   setDragging: (active) => ipcRenderer.send('window:dragging', active),
   hideWindow: () => ipcRenderer.send('window:hide'),
+  quit: () => ipcRenderer.send('app:quit'),
+  restart: () => ipcRenderer.send('app:restart'),
+  updateStatus: () => ipcRenderer.invoke('update:status'),
+  applyUpdate: () => ipcRenderer.invoke('update:apply'),
   cancelLookup: () => ipcRenderer.send('lookup:cancel'),
   copy: (text) => ipcRenderer.invoke('copy', text),
   speak: (payload) => ipcRenderer.invoke('speak', payload),
@@ -28,5 +32,8 @@ contextBridge.exposeInMainWorld('fuci', {
   },
   onOpenSettings: (handler) => {
     ipcRenderer.on('open-settings', () => handler());
+  },
+  onUpdateStatus: (handler) => {
+    ipcRenderer.on('update-status', (_event, payload) => handler(payload));
   },
 });

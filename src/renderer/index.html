@@ -10,6 +10,7 @@
   <div id="shell">
     <button id="orb" class="orb" type="button" aria-label="双击展开搜索框" title="双击展开">
       <canvas id="orb-flow" width="144" height="144" aria-hidden="true"></canvas>
+      <span id="orb-update-dot" class="update-dot" hidden>有可用更新</span>
     </button>
     <form id="search" class="capsule">
       <button id="seal" class="seal" type="button" aria-label="按住拖动，双击收成悬浮球" title="按住拖动，双击收成悬浮球">
@@ -23,11 +24,12 @@
       <button id="clear" type="button" hidden aria-label="清除">×</button>
       <span id="busy" hidden class="busy" aria-hidden="true"></span>
       <button id="lang" class="lang-pin" type="button" aria-label="查询语言：自动" title="自动识别。两边相同的汉字（如中国人）按中文查">自动</button>
-      <button id="gear" type="button" aria-label="设置">
+      <button id="gear" type="button" aria-label="设置" title="设置">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M5.8 5.8l1.6 1.6M16.6 16.6l1.6 1.6M18.2 5.8l-1.6 1.6M7.4 16.6l-1.6 1.6"></path>
         </svg>
+        <span id="update-dot" class="update-dot" hidden>有可用更新</span>
       </button>
       <span class="sheen" aria-hidden="true"></span>
     </form>

@@ -3,7 +3,8 @@
 const { app, BrowserWindow, Menu, Tray, clipboard, dialog, globalShortcut, ipcMain, nativeImage, net, screen } = require('electron');
 const path = require('path');
 const { explainGcpError } = require('./errors');
-const { lookup, testConnection, clearAuth, clearCache } = require('./gcp');
+const { lookup, testConnection, clearAuth, configureLookupCache, flushLookupCache } = require('./gcp');
+const { checkForUpdate, applyUpdate } = require('./update');
 const { pinnedLanguage } = require('./classify');
 const { synthesize } = require('./tts');
 
@@ -36,6 +37,8 @@ let shortcutLabel = '';
 let lookupJob = null;
 let ignoreMouse = false;
 let draggingWindow = false;
+let updateState = { available: false };
+let updateTimer = null;
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
@@ -268,6 +271,19 @@ function publicSettings(settings) {
   };
 }
 
+function publishUpdate(status) {
+  updateState = { available: !!status?.available };
+  if (win && !win.isDestroyed()) win.webContents.send('update-status', updateState);
+}
+
+async function refreshUpdate() {
+  try {
+    publishUpdate(await checkForUpdate(app.getAppPath()));
+  } catch {
+    publishUpdate({ available: false });
+  }
+}
+
 function registerIpc() {
   ipcMain.handle('bootstrap', () => {
     const stored = load(app.getPath('userData'));
@@ -278,7 +294,23 @@ function registerIpc() {
       adcFound: adcExists(),
       shortcutLabel,
       maxBoardHeight: maxBoardHeight(),
+      update: updateState,
     };
+  });
+
+  ipcMain.handle('update:status', () => updateState);
+
+  ipcMain.handle('update:apply', async () => {
+    try {
+      await applyUpdate(app.getAppPath());
+      setImmediate(() => {
+        app.relaunch();
+        app.quit();
+      });
+      return { ok: true };
+    } catch (error) {
+      return { ok: false, message: error.message || '更新没有完成' };
+    }
   });
 
   ipcMain.handle('settings:save', (_event, input) => {
@@ -287,7 +319,6 @@ function registerIpc() {
       applyLogin(next.openAtLogin);
       alignSession(next);
       clearAuth();
-      clearCache();
       tray?.refreshMenu?.();
       return { ok: true, settings: publicSettings(next), auth: sessionStatus() };
     } catch (error) {
@@ -303,7 +334,6 @@ function registerIpc() {
       applyLogin(next.openAtLogin);
       alignSession(next);
       clearAuth();
-      clearCache();
       tray?.refreshMenu?.();
       const message = await testConnection(currentSettings(), controller.signal);
       return { ok: true, message };
@@ -331,7 +361,6 @@ function registerIpc() {
       const next = save(app.getPath('userData'), normalizeForm(input));
       applyLogin(next.openAtLogin);
       alignSession(next);
-      clearCache();
       tray?.refreshMenu?.();
       const auth = await beginLogin(next);
       return { ok: true, auth, settings: publicSettings(next) };
@@ -489,6 +518,13 @@ function registerIpc() {
 
   ipcMain.on('window:hide', () => hideWindow());
 
+  ipcMain.on('app:quit', () => app.quit());
+
+  ipcMain.on('app:restart', () => {
+    app.relaunch();
+    app.quit();
+  });
+
   ipcMain.on('lookup:cancel', () => {
     if (!lookupJob) return;
     lookupJob.reason = 'cancel';
@@ -505,6 +541,7 @@ app.on('second-instance', () => showWindow());
 app.on('activate', () => showWindow());
 app.on('before-quit', () => {
   quitting = true;
+  flushLookupCache();
 });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 if (gotLock) app.whenReady().then(() => {
@@ -516,12 +553,18 @@ if (gotLock) app.whenReady().then(() => {
     credits: '译文：Cloud Translation API\n词条：Vertex AI Gemini',
   });
   configureSession(app.getPath('userData'));
+  configureLookupCache(app.getPath('userData'));
   alignSession(load(app.getPath('userData')));
   createWindow();
   registerShortcut();
   buildMenu();
   buildTray();
   registerIpc();
+  refreshUpdate();
+  updateTimer = setInterval(() => {
+    if (!quitting) refreshUpdate();
+  }, 6 * 60 * 60 * 1000);
+  if (updateTimer.unref) updateTimer.unref();
   const stored = load(app.getPath('userData'));
   if (stored.openAtLogin) applyLogin(true);
 });

@@ -20,6 +20,7 @@ const state = {
   result: null,
   auth: { signedIn: false, expired: false, expiresAt: 0 },
   authTimer: 0,
+  update: { available: false },
 };
 
 let req = 0;
@@ -79,6 +80,18 @@ function expandFromOrb() {
   if (state.mode !== 'settings') {
     input.focus();
   }
+}
+
+function paintUpdate() {
+  const available = !!state.update?.available;
+  const gearDot = document.getElementById('update-dot');
+  const orbDot = document.getElementById('orb-update-dot');
+  if (gearDot) gearDot.hidden = !available;
+  if (orbDot) orbDot.hidden = !available;
+  gear.title = available ? '有可用更新' : '设置';
+  gear.setAttribute('aria-label', available ? '设置，有可用更新' : '设置');
+  const offer = document.getElementById('update-offer');
+  if (offer) offer.hidden = !available;
 }
 
 function syncChrome() {
@@ -526,6 +539,11 @@ function openSettings(message) {
   syncChrome();
   showBoard(`
     <div class="kicker"><strong>设置</strong><span>${esc(boot.shortcutLabel || '')}</span></div>
+    <div id="update-offer" class="update-offer" hidden>
+      <span class="update-dot"></span>
+      <span>有可用更新</span>
+      <button type="button" class="primary" id="apply-update">更新</button>
+    </div>
     <p class="notice">填写项目、区域和模型。一键链接会执行 gcloud auth print-access-token；如果还没登录，会自动打开浏览器登录 Google 账号。令牌大约 1 小时有效，过期后需要再点一次。英语和日语译成所选中文；中文单词和句子译成英语或日语。</p>
     <label class="field"><span>项目 ID</span>
       <input id="project-id" spellcheck="false" autocapitalize="off" placeholder="my-gcp-project" value="${esc(settings.projectId || '')}" />
@@ -558,6 +576,8 @@ function openSettings(message) {
     <label class="check"><input id="login-item" type="checkbox" ${settings.openAtLogin ? 'checked' : ''} /><span>登录 macOS 时启动浮词。</span></label>
     <pre class="help">使用本机 gcloud 的登录状态。账号需要能调用该项目的 Cloud Translation 和 Vertex AI。</pre>
     <div class="actions">
+      <button type="button" class="ghost" id="quit-app">退出</button>
+      <button type="button" class="ghost" id="restart-app">重启</button>
       <button type="button" class="ghost" id="close-settings">完成</button>
     </div>
     <p id="settings-status" class="status ${message ? 'bad' : ''}">${esc(message || '')}</p>
@@ -574,6 +594,53 @@ function openSettings(message) {
     if (saved.ok) state.bootstrap.settings = saved.settings;
   });
 
+  let leaving = false;
+  async function saveAndLeave(action) {
+    if (leaving) return;
+    leaving = true;
+    const status = document.getElementById('settings-status');
+    const saved = await window.fuci.saveSettings(readSettingsForm());
+    if (!saved.ok) {
+      leaving = false;
+      status.className = 'status bad';
+      status.textContent = saved.message || '没能保存设置';
+      reportHeight();
+      return;
+    }
+    state.bootstrap.settings = saved.settings;
+    if (saved.auth) state.auth = saved.auth;
+    action();
+  }
+  paintUpdate();
+  document.getElementById('apply-update').onclick = async () => {
+    const button = document.getElementById('apply-update');
+    const status = document.getElementById('settings-status');
+    button.disabled = true;
+    button.textContent = '正在更新…';
+    status.className = 'status';
+    status.textContent = '正在从 GitHub 拉取最新代码…';
+    reportHeight();
+    const saved = await window.fuci.saveSettings(readSettingsForm());
+    if (!saved.ok) {
+      button.disabled = false;
+      button.textContent = '更新';
+      status.className = 'status bad';
+      status.textContent = saved.message || '没能保存设置';
+      reportHeight();
+      return;
+    }
+    state.bootstrap.settings = saved.settings;
+    const result = await window.fuci.applyUpdate();
+    if (!result?.ok) {
+      button.disabled = false;
+      button.textContent = '更新';
+      status.className = 'status bad';
+      status.textContent = result?.message || '更新没有完成';
+      reportHeight();
+    }
+  };
+  document.getElementById('quit-app').onclick = () => saveAndLeave(() => window.fuci.quit());
+  document.getElementById('restart-app').onclick = () => saveAndLeave(() => window.fuci.restart());
   document.getElementById('close-settings').onclick = async () => {
     const status = document.getElementById('settings-status');
     const saved = await window.fuci.saveSettings(readSettingsForm());
@@ -909,9 +976,22 @@ function startOrbFlow() {
 
 startOrbFlow();
 
+window.fuci.onUpdateStatus((status) => {
+  state.update = status || { available: false };
+  paintUpdate();
+  reportHeight();
+});
+
+window.fuci.updateStatus().then((status) => {
+  state.update = status || { available: false };
+  paintUpdate();
+}).catch(() => {});
+
 window.fuci.bootstrap().then((boot) => {
   state.bootstrap = boot;
   state.auth = boot.auth || state.auth;
+  state.update = boot.update || state.update;
+  paintUpdate();
   applyPanelOpacity(boot.settings?.panelOpacity);
   paintSourcePin();
   hint.textContent = boot.shortcutLabel || '';

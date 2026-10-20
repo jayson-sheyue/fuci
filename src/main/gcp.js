@@ -5,6 +5,7 @@ const { httpFetch } = require('./http');
 const { accessToken } = require('./oauth');
 const { firstGloss, sanitizeDictionary, sanitizeTokens } = require('./dictionary');
 const { explainGcpError } = require('./errors');
+const lookupCache = require('./lookup-cache');
 
 const DICTIONARY_SCHEMA = {
   type: 'object',
@@ -64,10 +65,16 @@ const DICTIONARY_SCHEMA = {
   required: ['headword', 'phonetic', 'lemma', 'note', 'inflections', 'entries'],
 };
 
-const cache = new Map();
-
 function clearCache() {
-  cache.clear();
+  lookupCache.clear();
+}
+
+function configureLookupCache(dir) {
+  lookupCache.configure(dir);
+}
+
+function flushLookupCache() {
+  lookupCache.flush();
 }
 
 function clearAuth() {}
@@ -415,15 +422,21 @@ async function translateOrFallback(settings, token, text, source, signal) {
   }
 }
 
-function cacheKey(settings, kind, lang, text) {
-  const normalized = lang === 'en' ? text.toLowerCase() : text;
-  return [settings.projectId, settings.target, settings.zhTarget, settings.model, settings.location, kind, lang, normalized].join('\n');
+function offlineLanguage(text, forced) {
+  if (forced) return forced;
+  const lang = fallbackLanguage(text);
+  return lang === 'und' ? '' : lang;
 }
 
-function remember(key, value) {
-  if (cache.has(key)) cache.delete(key);
-  cache.set(key, value);
-  if (cache.size > 40) cache.delete(cache.keys().next().value);
+function recall(settings, text, forced) {
+  const lang = offlineLanguage(text, forced);
+  if (!lang) return lookupCache.find(settings, text);
+  const kind = lang === 'en' || lang === 'ja' || lang === 'zh' ? classify(text, lang) : 'sentence';
+  return lookupCache.read(settings, kind, lang, text);
+}
+
+function remember(settings, kind, lang, text, value) {
+  lookupCache.put(settings, kind, lang, text, value);
 }
 
 async function analyzeSentence(settings, token, text, lang, signal) {
@@ -494,8 +507,11 @@ async function lookup(text, settings, { signal, onProgress, source } = {}) {
   }
 
   const clipped = clip(original, 800);
-  const token = await getToken(settings);
   const forced = pinnedLanguage(source);
+  const cached = recall(settings, clipped.text, forced);
+  if (cached) return { ...cached, query: original, truncated: clipped.truncated, pinned: Boolean(forced) };
+
+  const token = await getToken(settings);
   const hinted = forced || scriptLanguage(clipped.text);
   let lang = hinted;
   if (!forced && !lang) {
@@ -509,9 +525,6 @@ async function lookup(text, settings, { signal, onProgress, source } = {}) {
   throwIfAborted(signal);
 
   const kind = lang === 'en' || lang === 'ja' || lang === 'zh' ? classify(clipped.text, lang) : 'sentence';
-  const key = cacheKey(settings, kind, lang, clipped.text);
-  const cached = cache.get(key);
-  if (cached) return { ...cached, query: original, truncated: clipped.truncated, pinned: Boolean(forced) };
 
   const targetLanguage = lang === 'zh' ? (settings.zhTarget === 'ja' ? 'ja' : 'en') : 'zh';
   const base = {
@@ -539,7 +552,9 @@ async function lookup(text, settings, { signal, onProgress, source } = {}) {
     const tokens = await analysis;
     const result = { ...base, kind: 'sentence', ...translated, reading, translationReading, tokens };
     const readingReady = (!(lang === 'en' || lang === 'ja') || reading) && (lang !== 'zh' || translationReading);
-    if (translated.translationEngine === 'cloud-translation' && readingReady && tokens.length) remember(key, result);
+    if (translated.translationEngine === 'cloud-translation' && readingReady && tokens.length) {
+      remember(settings, kind, lang, clipped.text, result);
+    }
     return result;
   }
 
@@ -600,7 +615,7 @@ async function lookup(text, settings, { signal, onProgress, source } = {}) {
     dictionaryPending: false,
     dictionaryError: defined.dictionaryError ? explainGcpError(defined.dictionaryError).message : '',
   };
-  if (!defined.dictionaryError) remember(key, result);
+  if (!defined.dictionaryError) remember(settings, kind, lang, clipped.text, result);
   return result;
 }
 
@@ -636,5 +651,7 @@ module.exports = {
   testConnection,
   clearCache,
   clearAuth,
+  configureLookupCache,
+  flushLookupCache,
   decodeEntities,
 };
