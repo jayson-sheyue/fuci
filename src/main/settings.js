@@ -4,6 +4,12 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+const THEME_IDS = ['sky', 'bamboo', 'cinnabar', 'wisteria', 'amber', 'haitang', 'night'];
+
+function normalizeTheme(value) {
+  return THEME_IDS.includes(value) ? value : 'sky';
+}
+
 const DEFAULTS = {
   projectId: '',
   keyFile: '',
@@ -15,6 +21,7 @@ const DEFAULTS = {
   zhTarget: 'en',
   sourcePin: '',
   panelOpacity: 0.88,
+  theme: 'sky',
   openAtLogin: false,
   bounds: null,
 };
@@ -70,6 +77,8 @@ function effectiveProjectId(settings) {
 
 module.exports = {
   DEFAULTS,
+  THEME_IDS,
+  normalizeTheme,
   load,
   save,
   readGcloudProject,

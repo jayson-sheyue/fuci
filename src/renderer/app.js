@@ -14,6 +14,61 @@ const board = document.getElementById('board');
 const boardBody = document.getElementById('board-body');
 const shell = document.getElementById('shell');
 
+const THEMES = [
+  { id: 'sky', label: '晴空', swatch: '#007aff' },
+  { id: 'bamboo', label: '青竹', swatch: '#1f8a4c' },
+  { id: 'cinnabar', label: '朱砂', swatch: '#c44536' },
+  { id: 'wisteria', label: '藤紫', swatch: '#7b4fd3' },
+  { id: 'amber', label: '琥珀', swatch: '#c47a12' },
+  { id: 'haitang', label: '海棠', swatch: '#d4537e' },
+  { id: 'night', label: '夜色', swatch: '#64b5ff' },
+];
+
+const ORB_COLORS = {
+  sky: {
+    halo: ['rgba(120, 186, 255, 0.55)', 'rgba(80, 160, 255, 0.22)', 'rgba(170, 214, 255, 0.08)'],
+    body: ['rgba(210, 232, 255, 0.96)', 'rgba(26, 116, 255, 0.9)', 'rgba(10, 90, 230, 0.45)', 'rgba(140, 196, 255, 0)'],
+    blobs: ['#5ac8ff', '#0a84ff', '#64d2ff'],
+    light: '#d6ecff',
+  },
+  bamboo: {
+    halo: ['rgba(150, 220, 170, 0.55)', 'rgba(40, 150, 80, 0.22)', 'rgba(180, 230, 190, 0.08)'],
+    body: ['rgba(220, 245, 225, 0.96)', 'rgba(31, 138, 76, 0.9)', 'rgba(16, 90, 48, 0.45)', 'rgba(140, 210, 160, 0)'],
+    blobs: ['#7ddea0', '#1f8a4c', '#b7f0c8'],
+    light: '#e5f8ea',
+  },
+  cinnabar: {
+    halo: ['rgba(240, 160, 140, 0.55)', 'rgba(190, 70, 50, 0.22)', 'rgba(245, 190, 175, 0.08)'],
+    body: ['rgba(255, 226, 216, 0.96)', 'rgba(196, 69, 54, 0.9)', 'rgba(130, 36, 28, 0.45)', 'rgba(240, 160, 140, 0)'],
+    blobs: ['#f0a090', '#c44536', '#f6cfc4'],
+    light: '#ffe8e2',
+  },
+  wisteria: {
+    halo: ['rgba(190, 160, 245, 0.55)', 'rgba(120, 70, 210, 0.22)', 'rgba(210, 190, 245, 0.08)'],
+    body: ['rgba(236, 226, 255, 0.96)', 'rgba(123, 79, 211, 0.9)', 'rgba(70, 36, 140, 0.45)', 'rgba(190, 160, 245, 0)'],
+    blobs: ['#c4a6f5', '#7b4fd3', '#e4d6ff'],
+    light: '#f3ebff',
+  },
+  amber: {
+    halo: ['rgba(240, 196, 110, 0.55)', 'rgba(190, 120, 20, 0.24)', 'rgba(245, 220, 160, 0.08)'],
+    body: ['rgba(255, 236, 196, 0.96)', 'rgba(196, 122, 18, 0.9)', 'rgba(120, 72, 8, 0.45)', 'rgba(240, 196, 110, 0)'],
+    blobs: ['#f0c46e', '#c47a12', '#ffe3a8'],
+    light: '#fff3d6',
+  },
+  haitang: {
+    halo: ['rgba(245, 170, 196, 0.55)', 'rgba(200, 70, 120, 0.22)', 'rgba(250, 200, 216, 0.08)'],
+    body: ['rgba(255, 226, 236, 0.96)', 'rgba(212, 83, 126, 0.9)', 'rgba(140, 40, 78, 0.45)', 'rgba(245, 170, 196, 0)'],
+    blobs: ['#f5aac4', '#d4537e', '#ffd6e4'],
+    light: '#ffe8f0',
+  },
+  night: {
+    halo: ['rgba(140, 196, 255, 0.45)', 'rgba(40, 90, 160, 0.28)', 'rgba(80, 140, 210, 0.08)'],
+    body: ['rgba(210, 230, 255, 0.9)', 'rgba(70, 140, 220, 0.85)', 'rgba(16, 48, 96, 0.4)', 'rgba(100, 160, 230, 0)'],
+    blobs: ['#9fd0ff', '#3d8adf', '#d6ecff'],
+    light: '#e7f3ff',
+  },
+};
+
 const state = {
   mode: 'idle',
   bootstrap: null,
@@ -21,6 +76,7 @@ const state = {
   auth: { signedIn: false, expired: false, expiresAt: 0 },
   authTimer: 0,
   update: { available: false },
+  theme: 'sky',
 };
 
 let req = 0;
@@ -561,6 +617,11 @@ function openSettings(message) {
     <label class="field"><span>面板不透明度 <b id="opacity-readout">${opacityPercent(settings.panelOpacity)}%</b></span>
       <input id="panel-opacity" type="range" min="40" max="100" step="1" value="${opacityPercent(settings.panelOpacity)}" />
     </label>
+    <div class="field"><span>主题</span>
+      <div class="themes" role="listbox" aria-label="主题">
+        ${THEMES.map((theme) => `<button type="button" class="theme-swatch${themeId(settings.theme) === theme.id ? ' is-selected' : ''}" data-theme="${theme.id}" style="--swatch:${theme.swatch}" role="option" aria-selected="${themeId(settings.theme) === theme.id ? 'true' : 'false'}" aria-label="${esc(theme.label)}">${esc(theme.label)}</button>`).join('')}
+      </div>
+    </div>
     <label class="field"><span>外文译成</span>
       <select id="target">
         <option value="zh-CN" ${settings.target !== 'zh-TW' ? 'selected' : ''}>简体中文</option>
@@ -592,6 +653,18 @@ function openSettings(message) {
   opacityInput.addEventListener('change', async () => {
     const saved = await window.fuci.saveSettings(readSettingsForm());
     if (saved.ok) state.bootstrap.settings = saved.settings;
+  });
+  document.querySelectorAll('.theme-swatch').forEach((button) => {
+    button.addEventListener('click', async () => {
+      applyTheme(button.getAttribute('data-theme'));
+      document.querySelectorAll('.theme-swatch').forEach((node) => {
+        const selected = node === button;
+        node.classList.toggle('is-selected', selected);
+        node.setAttribute('aria-selected', selected ? 'true' : 'false');
+      });
+      const saved = await window.fuci.saveSettings(readSettingsForm());
+      if (saved.ok) state.bootstrap.settings = saved.settings;
+    });
   });
 
   let leaving = false;
@@ -713,6 +786,17 @@ function applyPanelOpacity(value) {
   document.documentElement.style.setProperty('--panel', String(opacityPercent(value) / 100));
 }
 
+function themeId(value) {
+  return THEMES.some((theme) => theme.id === value) ? value : 'sky';
+}
+
+function applyTheme(value) {
+  const id = themeId(value);
+  state.theme = id;
+  document.documentElement.dataset.theme = id;
+  if (state.bootstrap?.settings) state.bootstrap.settings.theme = id;
+}
+
 function readSettingsForm() {
   return {
     projectId: fieldValue('project-id').trim(),
@@ -722,6 +806,7 @@ function readSettingsForm() {
     zhTarget: fieldValue('zh-target'),
     openAtLogin: document.getElementById('login-item').checked,
     panelOpacity: Number(fieldValue('panel-opacity')) / 100,
+    theme: themeId(state.theme),
   };
 }
 
@@ -890,26 +975,27 @@ function startOrbFlow() {
     t += shell.classList.contains('is-loading') ? 0.05 : 0.02;
     ctx.clearRect(0, 0, css, css);
     ctx.save();
+    const palette = ORB_COLORS[state.theme] || ORB_COLORS.sky;
     const halo = ctx.createRadialGradient(cx, cy, 10, cx, cy, 52);
-    halo.addColorStop(0, 'rgba(120, 186, 255, 0.55)');
-    halo.addColorStop(0.55, 'rgba(80, 160, 255, 0.22)');
-    halo.addColorStop(0.82, 'rgba(170, 214, 255, 0.08)');
+    halo.addColorStop(0, palette.halo[0]);
+    halo.addColorStop(0.55, palette.halo[1]);
+    halo.addColorStop(0.82, palette.halo[2]);
     halo.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = halo;
     ctx.fillRect(0, 0, css, css);
     const body = ctx.createRadialGradient(cx - 4, cy - 6, 2, cx, cy, 40);
-    body.addColorStop(0, 'rgba(210, 232, 255, 0.96)');
-    body.addColorStop(0.46, 'rgba(26, 116, 255, 0.9)');
-    body.addColorStop(0.78, 'rgba(10, 90, 230, 0.45)');
-    body.addColorStop(1, 'rgba(140, 196, 255, 0)');
+    body.addColorStop(0, palette.body[0]);
+    body.addColorStop(0.46, palette.body[1]);
+    body.addColorStop(0.78, palette.body[2]);
+    body.addColorStop(1, palette.body[3]);
     ctx.fillStyle = body;
     ctx.fillRect(0, 0, css, css);
 
     ctx.filter = 'blur(11px)';
     const blues = [
-      { speed: 1.15, phase: 0.2, rx: 18, ry: 14, radius: 24, color: '#5ac8ff' },
-      { speed: -0.86, phase: 2.1, rx: 16, ry: 20, radius: 22, color: '#0a84ff' },
-      { speed: 0.62, phase: 4.0, rx: 12, ry: 16, radius: 20, color: '#64d2ff' },
+      { speed: 1.15, phase: 0.2, rx: 18, ry: 14, radius: 24, color: palette.blobs[0] },
+      { speed: -0.86, phase: 2.1, rx: 16, ry: 20, radius: 22, color: palette.blobs[1] },
+      { speed: 0.62, phase: 4.0, rx: 12, ry: 16, radius: 20, color: palette.blobs[2] },
     ];
     blues.forEach((item) => {
       const angle = t * item.speed + item.phase;
@@ -937,7 +1023,7 @@ function startOrbFlow() {
         cy + Math.sin(angle * 1.2) * item.ry,
         item.radius + Math.sin(angle * 3) * 3,
         '#ffffff',
-        '#d6ecff',
+        palette.light,
         0.82,
       );
     });
@@ -992,6 +1078,7 @@ window.fuci.bootstrap().then((boot) => {
   state.auth = boot.auth || state.auth;
   state.update = boot.update || state.update;
   paintUpdate();
+  applyTheme(boot.settings?.theme);
   applyPanelOpacity(boot.settings?.panelOpacity);
   paintSourcePin();
   hint.textContent = boot.shortcutLabel || '';

@@ -11,7 +11,7 @@ const { synthesize } = require('./tts');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 const { alignSession, beginLogin, configureSession, sessionStatus } = require('./oauth');
 const { setFetchImplementation } = require('./http');
-const { adcExists, effectiveProjectId, load, readGcloudProject, save } = require('./settings');
+const { adcExists, effectiveProjectId, load, normalizeTheme, readGcloudProject, save } = require('./settings');
 
 setFetchImplementation((url, options = {}) => net.fetch(url, {
   method: options.method,
@@ -246,10 +246,11 @@ function normalizeForm(input) {
   const zhTarget = input?.zhTarget === 'ja' ? 'ja' : 'en';
   const openAtLogin = !!input?.openAtLogin;
   const panelOpacity = clampPanelOpacity(input?.panelOpacity);
+  const theme = normalizeTheme(input?.theme);
   if (/\s/.test(projectId)) throw new Error('项目 ID 不能包含空格');
   if (!/^[a-z0-9-]{1,40}$/i.test(location)) throw new Error('区域格式不对');
   if (!/^[a-zA-Z0-9._-]{1,80}$/.test(model)) throw new Error('模型 ID 格式不对');
-  return { projectId, location, model, oauthClientId: '', oauthClientSecret: '', target, zhTarget, openAtLogin, panelOpacity };
+  return { projectId, location, model, oauthClientId: '', oauthClientSecret: '', target, zhTarget, openAtLogin, panelOpacity, theme };
 }
 
 function clampPanelOpacity(value) {
@@ -267,6 +268,7 @@ function publicSettings(settings) {
     zhTarget: settings.zhTarget === 'ja' ? 'ja' : 'en',
     openAtLogin: !!settings.openAtLogin,
     panelOpacity: clampPanelOpacity(settings.panelOpacity),
+    theme: normalizeTheme(settings.theme),
     sourcePin: pinnedLanguage(settings.sourcePin),
   };
 }
