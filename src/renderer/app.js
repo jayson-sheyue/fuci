@@ -1192,36 +1192,75 @@ function resetShot() {
   }
   input.value = '';
   state.locale = 'zh';
-  if (state.bootstrap?.settings) state.bootstrap.settings.uiLocale = 'zh';
+  if (state.bootstrap?.settings) {
+    state.bootstrap.settings.uiLocale = 'zh';
+    state.bootstrap.settings.theme = 'sky';
+    state.bootstrap.settings.panelOpacity = 0.92;
+    state.bootstrap.settings.pair = 'en-zh';
+  }
+  applyTheme('sky');
+  applyPanelOpacity(0.92);
   paintChrome();
   hideBoard();
+}
+
+function shotLocale(shot) {
+  if (shot === 'en' || shot.startsWith('en-')) return 'en';
+  if (shot === 'ja' || shot.startsWith('ja-')) return 'ja';
+  return 'zh';
+}
+
+function shotKind(shot) {
+  if (shot === 'en' || shot === 'ja') return 'settings';
+  if (shot.startsWith('en-') || shot.startsWith('ja-')) return shot.slice(3);
+  return shot;
 }
 
 function applyShot() {
   const shot = (location.hash || '').replace(/^#/, '');
   if (!shot) return;
-  if (shot === 'ja' || shot === 'en' || shot === 'en-word') {
-    state.locale = shot === 'ja' ? 'ja' : 'en';
-    if (state.bootstrap?.settings) state.bootstrap.settings.uiLocale = state.locale;
-    paintChrome();
+  const lang = shotLocale(shot);
+  const kind = shotKind(shot);
+  state.locale = lang;
+  if (state.bootstrap?.settings) state.bootstrap.settings.uiLocale = lang;
+  paintChrome();
+  if (kind === 'look') {
+    if (state.bootstrap?.settings) {
+      state.bootstrap.settings.theme = 'night';
+      state.bootstrap.settings.panelOpacity = 0.64;
+    }
+    applyTheme('night');
+    applyPanelOpacity(0.64);
+    openSettings();
+    document.querySelector('.locales')?.closest('.field')?.remove();
+    document.querySelector('.notice')?.remove();
+    for (const id of ['project-id', 'location', 'model']) {
+      document.getElementById(id)?.closest('.field')?.remove();
+    }
+    document.querySelector('.auth-row')?.remove();
+    document.querySelector('.help')?.remove();
+    document.querySelector('.check')?.remove();
+    document.querySelector('.actions')?.remove();
+    document.getElementById('settings-status')?.remove();
+    return;
   }
-  if (shot === 'settings' || shot === 'ja' || shot === 'en') {
+  if (kind === 'settings') {
     openSettings();
     return;
   }
-  if (shot === 'word' || shot === 'en-word') {
+  if (kind === 'word') {
     input.value = 'ephemeral';
     syncChrome();
     renderResult(sampleWord());
     return;
   }
-  if (shot === 'sentence') {
+  if (kind === 'sentence') {
     input.value = 'Could you speak a little more slowly?';
     syncChrome();
     renderResult(sampleSentence());
     return;
   }
-  if (shot === 'orb') collapseToOrb();
+  if (kind === 'orb') collapseToOrb();
 }
 
 window.fuci.bootstrap().then((boot) => {
