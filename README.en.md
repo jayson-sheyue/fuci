@@ -38,7 +38,13 @@ There are seven themes: Sky, Bamboo, Cinnabar, Wisteria, Amber, Crabapple, and N
 
 ## Download
 
-Download `fuci-<version>-arm64.dmg` from [GitHub Releases](https://github.com/jayson-sheyue/fuci/releases/latest). Open it and drag 浮词 into Applications. The package is for Apple silicon (arm64).
+Download a package from [all releases](https://github.com/jayson-sheyue/fuci/releases). Open it and drag 浮词 into Applications. The package is for Apple silicon (arm64).
+
+- [1.3.0 (current)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
+- [1.2.2](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.2/fuci-1.2.2-arm64.dmg)
+- [1.2.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.1/fuci-1.2.1-arm64.dmg)
+- [1.2.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.0/fuci-1.2.0-arm64.dmg)
+- [1.1.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.1.0/fuci-1.1.0-arm64.dmg)
 
 The downloaded app is not notarized. If macOS says “浮词” Not Opened, click **Done**, not Move to Trash. Then run:
 

@@ -42,7 +42,13 @@
 
 ## 下载
 
-在 [GitHub Releases](https://github.com/jayson-sheyue/fuci/releases/latest) 下载 `fuci-版本号-arm64.dmg`。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
+在 [全部版本](https://github.com/jayson-sheyue/fuci/releases) 里下载安装包。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
+
+- [1.3.0（当前）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
+- [1.2.2](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.2/fuci-1.2.2-arm64.dmg)
+- [1.2.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.1/fuci-1.2.1-arm64.dmg)
+- [1.2.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.0/fuci-1.2.0-arm64.dmg)
+- [1.1.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.1.0/fuci-1.1.0-arm64.dmg)
 
 从浏览器下载的安装包没有苹果公证。第一次打开如果弹出「“浮词” Not Opened」，点 **Done**，不要点 Move to Trash。然后在终端执行：
 

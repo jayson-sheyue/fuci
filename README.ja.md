@@ -38,7 +38,13 @@
 
 ## ダウンロード
 
-[GitHub Releases](https://github.com/jayson-sheyue/fuci/releases/latest) から `fuci-バージョン-arm64.dmg` を落とします。開いて「浮词」を「アプリケーション」にドラッグします。Apple シリコン（arm64）用です。
+[すべてのバージョン](https://github.com/jayson-sheyue/fuci/releases) からインストールパッケージを落とします。開いて「浮词」を「アプリケーション」にドラッグします。Apple シリコン（arm64）用です。
+
+- [1.3.0（最新）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
+- [1.2.2](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.2/fuci-1.2.2-arm64.dmg)
+- [1.2.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.1/fuci-1.2.1-arm64.dmg)
+- [1.2.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.0/fuci-1.2.0-arm64.dmg)
+- [1.1.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.1.0/fuci-1.1.0-arm64.dmg)
 
 ダウンロードしたアプリは Apple の公証を受けていません。最初に「“浮词” Not Opened」と出たら、**Done**（完了）を押し、Move to Trash（ゴミ箱に入れる）は押さないでください。そのあとターミナルで実行します。
 
