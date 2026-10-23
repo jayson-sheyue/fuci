@@ -1,14 +1,22 @@
 # 浮词
 
-> **English** — This page.
+> **English** — This page. One word should not make you leave the page.
 >
-> **中文** — 不用离开正在读的页面就能查词。**[阅读中文说明 →](README.md)**
+> **中文** — 查一个词，不该离开正在读的这一页。**[阅读中文说明 →](README.md)**
 >
-> **日本語** — 読んでいるページを離れずに、中・英・日を引けます。**[日本語で読む →](README.ja.md)**
+> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[日本語で読む →](README.ja.md)**
 
-浮词 stays on top of whatever you are reading. Type a word and a card appears. Type a sentence and you get the whole translation plus a gloss for each word. You do not have to leave the page. Lookups you have already made stay on this Mac, so the next time they come back without waiting.
+You are mid-page, and one word sends you to a browser. When you come back, that line is gone. 浮词 stays on top of what you are reading, so the lookup never leaves the page.
 
-The interface can be Chinese, Japanese, or English. That only changes buttons and labels. Translation direction is the button on the search bar: Chinese, Japanese, and English can translate into each other. When Chinese is involved, simplified or traditional is chosen in settings.
+It is good at three things:
+
+- A word becomes a card: translation, pronunciation, part of speech, and an example. A sentence stays a sentence: the translation, plus a short gloss for each word.
+- Chinese, Japanese, and English translate into each other, including into your own language.
+- A lookup stays on this Mac. The next time that word shows up on the page, you do not wait again.
+
+The word stays on the page. Type it, the card opens over the text, and the page is still there when the card closes.
+
+![Look up a word without leaving the page](docs/en/lookup.gif)
 
 ## What it does
 
@@ -39,6 +47,22 @@ Interface language is the first control in settings. Choose 中文, 日本語, o
 There are seven themes: Sky, Bamboo, Cinnabar, Wisteria, Amber, Crabapple, and Night. One click changes the search bar, the card, and the orb together. The opacity slider affects both the search bar and the card. The default is 88%. The picture below is Night at 64%, with the theme choices and the slider on the same page.
 
 ![Themes and opacity](docs/en/look.png)
+
+## Before you start
+
+Lookups use your own GCP project. This repository has no project ID, account, or key.
+
+- A Mac with Apple silicon (arm64).
+- A Google Cloud project with billing enabled.
+- Enable these APIs on that project:
+  - **Cloud Translation API** for the translation. Sentences use it first.
+  - **Vertex AI API** for the dictionary entry, pronunciation, and examples. The default model is `gemini-3.8-flash` in `global`.
+  - **Cloud Text-to-Speech API** only for the speaker button. Lookups work without it.
+- Add the Google account you will sign in with to that project, and grant:
+  - **Cloud Translation API User** (`roles/cloudtranslate.user`)
+  - **Vertex AI User** (`roles/aiplatform.user`)
+
+The installer includes gcloud. Enter the project ID in settings and choose Connect. The account, token, and lookup cache stay on this Mac.
 
 ## Download
 
@@ -80,7 +104,7 @@ The current version is shown at the right of the settings title. The same page s
 
 The repository does not contain a project ID, access token, or Google account. Those stay on this Mac. The DMG includes the Google Cloud CLI, so Connect works without installing gcloud yourself. Enter the project ID, location, and model ID. Connect runs `gcloud auth print-access-token` and gets a token that lasts about an hour. If you are signed out, the browser opens for `gcloud auth login`. When the countdown ends or the token is expired, connect again. Panel opacity changes the search bar and the card together, starting at 88%, and applies as you drag. Chinese script chooses simplified or traditional for any direction that includes Chinese. The current lookup runs again after you change it.
 
-The project needs billing, Cloud Translation API, and Vertex AI API. The signed-in account needs permission to call both.
+Which APIs to enable, and which roles to grant, are listed in Before you start.
 
 A word lookup calls two APIs:
 
