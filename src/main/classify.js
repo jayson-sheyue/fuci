@@ -52,6 +52,19 @@ function pinnedLanguage(code) {
   return '';
 }
 
+const PAIRS = ['en-zh', 'en-ja', 'ja-zh', 'ja-en', 'zh-en', 'zh-ja'];
+
+function normalizePair(value, legacy) {
+  const text = String(value || '');
+  if (PAIRS.includes(text)) return text;
+  const pin = pinnedLanguage(legacy?.sourcePin);
+  const outbound = legacy?.zhTarget === 'ja' ? 'ja' : 'en';
+  if (pin === 'zh') return `zh-${outbound}`;
+  if (pin === 'ja') return 'ja-zh';
+  if (pin === 'en') return 'en-zh';
+  return 'en-zh';
+}
+
 function normalizeLang(code) {
   const value = String(code || '').toLowerCase();
   if (!value || value === 'und') return 'und';
@@ -158,6 +171,8 @@ module.exports = {
   resolveLanguage,
   fallbackLanguage,
   pinnedLanguage,
+  PAIRS,
+  normalizePair,
   normalizeLang,
   languageLabel,
   classify,

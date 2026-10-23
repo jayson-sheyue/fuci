@@ -313,12 +313,13 @@ button, input, select { font: inherit; color: inherit; }
 .lang-pin {
   flex: none;
   height: 22px;
-  padding: 0 7px;
+  padding: 0 8px;
   border: 0;
   border-radius: 999px;
   background: var(--chip);
   color: var(--chip-text);
   font: 11px/22px "SF Pro Text", "PingFang SC", sans-serif;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -873,6 +874,36 @@ rt {
 .status.bad { color: var(--cinnabar-deep); }
 
 ::selection { background: var(--selection); }
+
+.locales {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.locale-choice {
+  height: 34px;
+  border: 1px solid var(--field-border);
+  border-radius: 999px;
+  background: var(--field);
+  color: var(--ink);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.locale-choice.is-selected {
+  border-color: var(--accent);
+  color: var(--accent-deep);
+  font-weight: 600;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.ui-hint {
+  margin: 8px 0 0;
+  color: var(--faint);
+  font-size: 12px;
+  line-height: 1.45;
+}
 
 .themes {
   display: grid;

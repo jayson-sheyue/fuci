@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { httpFetch } = require('./http');
+const { tr } = require('../renderer/i18n');
 
 let userData = '';
 let session = null;
@@ -126,13 +127,13 @@ function runGcloud(bin, args, { timeoutMs, allowPrompt }) {
     let stderr = '';
     const timer = setTimeout(() => {
       child.kill('SIGTERM');
-      resolve({ code: -1, stdout: '', stderr: 'gcloud 超时' });
+      resolve({ code: -1, stdout: '', stderr: tr('errGcloudTimeout') });
     }, timeoutMs);
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
     child.on('error', (error) => {
       clearTimeout(timer);
-      resolve({ code: -1, stdout: '', stderr: error.message || 'gcloud 没有启动' });
+      resolve({ code: -1, stdout: '', stderr: error.message || tr('errGcloudStart') });
     });
     child.on('close', (code) => {
       clearTimeout(timer);
@@ -147,7 +148,7 @@ function safeError(stderr) {
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith('WARNING:'));
-  return (text[0] || 'gcloud 没有返回访问令牌。').slice(0, 180);
+  return (text[0] || tr('errNoGcloudToken')).slice(0, 180);
 }
 
 function needsLogin(stderr) {
@@ -183,19 +184,19 @@ async function expiryFromToken(token) {
 
 async function beginLogin(settings) {
   const projectId = String(settings.projectId || '').trim();
-  if (!projectId) throw new Error('先填写项目 ID。');
-  if (pending) throw new Error('正在登录，请在浏览器里完成 Google 账号登录。');
+  if (!projectId) throw new Error(tr('errNeedProject'));
+  if (pending) throw new Error(tr('errLoginPending'));
   const bin = findGcloud();
-  if (!bin) throw new Error('没有找到 gcloud。安装包里应该带有它；如果这是从源码运行的，请先安装 Google Cloud SDK。');
+  if (!bin) throw new Error(tr('errNoGcloud'));
   pending = true;
   try {
     let printed = await printAccessToken(bin);
     if (!printed.ok) {
       const login = await runGcloud(bin, ['auth', 'login', '--brief'], { timeoutMs: 180000, allowPrompt: true });
-      if (login.code !== 0) throw new Error(needsLogin(login.stderr) ? 'Google 登录没有完成。' : safeError(login.stderr));
+      if (login.code !== 0) throw new Error(needsLogin(login.stderr) ? tr('errLoginIncomplete') : safeError(login.stderr));
       printed = await printAccessToken(bin);
     }
-    if (!printed.ok) throw new Error(printed.message || '没有拿到访问令牌。');
+    if (!printed.ok) throw new Error(printed.message || tr('errNoAccessToken'));
     session = {
       accessToken: printed.value,
       expiresAt: await expiryFromToken(printed.value),

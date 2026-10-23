@@ -22,6 +22,7 @@ const DEFAULTS = {
   sourcePin: '',
   panelOpacity: 0.88,
   theme: 'sky',
+  uiLocale: 'zh',
   openAtLogin: false,
   bounds: null,
 };

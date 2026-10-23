@@ -2,6 +2,7 @@
 
 const { httpFetch } = require('./http');
 const { accessToken } = require('./oauth');
+const { tr } = require('../renderer/i18n');
 
 const TTS_MODELS = ['gemini-3.1-flash-tts-preview', 'gemini-2.5-pro-tts'];
 const cache = new Map();
@@ -42,12 +43,12 @@ async function synthesizeOnce(settings, token, text, lang, model, signal) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(data.error?.message || response.statusText || '语音合成失败');
+    const error = new Error(data.error?.message || response.statusText || tr('errSpeechFail'));
     error.status = response.status;
     throw error;
   }
   if (!data.audioContent) {
-    throw Object.assign(new Error('语音接口没有返回音频'), { status: 502 });
+    throw Object.assign(new Error(tr('errNoAudio')), { status: 502 });
   }
   return data.audioContent;
 }
@@ -55,10 +56,10 @@ async function synthesizeOnce(settings, token, text, lang, model, signal) {
 async function synthesize(text, lang, settings, signal) {
   const value = String(text || '').trim().slice(0, 800);
   if (!value || (lang !== 'en' && lang !== 'ja')) {
-    throw Object.assign(new Error('只能播放英语或日语'), { status: 0 });
+    throw Object.assign(new Error(tr('errSpeechLang')), { status: 0 });
   }
   if (!settings?.projectId) {
-    throw Object.assign(new Error('还没有 GCP 项目 ID'), { status: 0 });
+    throw Object.assign(new Error(tr('errNoProjectShort')), { status: 0 });
   }
   const token = accessToken(settings);
   if (!token) {

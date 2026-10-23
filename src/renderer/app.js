@@ -15,13 +15,18 @@ const boardBody = document.getElementById('board-body');
 const shell = document.getElementById('shell');
 
 const THEMES = [
-  { id: 'sky', label: '晴空', swatch: '#007aff' },
-  { id: 'bamboo', label: '青竹', swatch: '#1f8a4c' },
-  { id: 'cinnabar', label: '朱砂', swatch: '#c44536' },
-  { id: 'wisteria', label: '藤紫', swatch: '#7b4fd3' },
-  { id: 'amber', label: '琥珀', swatch: '#c47a12' },
-  { id: 'haitang', label: '海棠', swatch: '#d4537e' },
-  { id: 'night', label: '夜色', swatch: '#64b5ff' },
+  { id: 'sky', key: 'themeSky', swatch: '#007aff' },
+  { id: 'bamboo', key: 'themeBamboo', swatch: '#1f8a4c' },
+  { id: 'cinnabar', key: 'themeCinnabar', swatch: '#c44536' },
+  { id: 'wisteria', key: 'themeWisteria', swatch: '#7b4fd3' },
+  { id: 'amber', key: 'themeAmber', swatch: '#c47a12' },
+  { id: 'haitang', key: 'themeHaitang', swatch: '#d4537e' },
+  { id: 'night', key: 'themeNight', swatch: '#64b5ff' },
+];
+const UI_LOCALES = [
+  { id: 'zh', label: '中文' },
+  { id: 'ja', label: '日本語' },
+  { id: 'en', label: 'English' },
 ];
 
 const ORB_COLORS = {
@@ -77,7 +82,29 @@ const state = {
   authTimer: 0,
   update: { available: false },
   theme: 'sky',
+  locale: 'zh',
 };
+
+function locale() {
+  return state.locale === 'ja' || state.locale === 'en' ? state.locale : 'zh';
+}
+
+function t(key, vars) {
+  return window.fuciI18n.t(locale(), key, vars);
+}
+
+function paintChrome() {
+  document.documentElement.lang = locale() === 'ja' ? 'ja' : locale() === 'en' ? 'en' : 'zh-CN';
+  input.placeholder = t('placeholder');
+  input.setAttribute('aria-label', t('queryAria'));
+  clearBtn.setAttribute('aria-label', t('clear'));
+  orb.setAttribute('aria-label', t('orbExpand'));
+  orb.title = t('orbExpandTitle');
+  seal.setAttribute('aria-label', t('sealDrag'));
+  seal.title = t('sealDrag');
+  paintUpdate();
+  paintPair();
+}
 
 let req = 0;
 let timer = 0;
@@ -145,8 +172,8 @@ function paintUpdate() {
   const orbDot = document.getElementById('orb-update-dot');
   if (gearDot) gearDot.hidden = !available;
   if (orbDot) orbDot.hidden = !available;
-  gear.title = available ? '有可用更新' : '设置';
-  gear.setAttribute('aria-label', available ? '设置，有可用更新' : '设置');
+  gear.title = available ? t('updateAvailable') : t('settings');
+  gear.setAttribute('aria-label', available ? t('settingsUpdate') : t('settings'));
   const offer = document.getElementById('update-offer');
   if (offer) offer.hidden = !available;
 }
@@ -182,11 +209,11 @@ function hideBoard() {
 }
 
 function directionLabel(result) {
-  const names = { en: '英语', ja: '日语', zh: '中文', mix: '混合' };
+  const names = { en: t('langEn'), ja: t('langJa'), zh: t('langZh'), mix: t('langMix') };
   const from = names[result.sourceLanguage] || result.sourceLanguageLabel || '';
   const to = names[result.targetLanguage];
   const label = !to || to === from ? from : `${from} → ${to}`;
-  return result.pinned ? `指定 · ${label}` : label;
+  return result.pinned ? t('pinned', { label }) : label;
 }
 
 function formsHtml(forms, lang) {
@@ -214,12 +241,10 @@ function tokensHtml(tokens) {
 
 function footerText(result) {
   if (result?.translationEngine === 'gemini') {
-    return result.kind === 'sentence'
-      ? 'Gemini 译文 · Cloud Translation API 还没在项目里启用'
-      : 'Gemini 译文与词条 · Cloud Translation API 还没在项目里启用';
+    return result.kind === 'sentence' ? t('footerGeminiSentence') : t('footerGeminiWord');
   }
-  if (result?.kind === 'sentence') return 'Cloud Translation';
-  return 'Cloud Translation 译文 · Gemini 词条';
+  if (result?.kind === 'sentence') return t('footerCloud');
+  return t('footerBoth');
 }
 
 function phoneticLine(reading) {
@@ -231,7 +256,7 @@ const SPEAKER_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden
 function speakButton(text, lang) {
   const value = spokenText(text);
   if (!value || (lang !== 'en' && lang !== 'ja')) return '';
-  return `<button type="button" class="speak" data-speak="${esc(value)}" data-lang="${lang}" aria-label="播放">${SPEAKER_SVG}</button>`;
+  return `<button type="button" class="speak" data-speak="${esc(value)}" data-lang="${lang}" aria-label="${esc(t('play'))}">${SPEAKER_SVG}</button>`;
 }
 
 let speechCtx = null;
@@ -290,7 +315,7 @@ async function playSpeech(button) {
   if (!button.isConnected || token !== speechToken) return;
   if (!result?.ok || !result.audio) {
     button.classList.remove('is-playing');
-    showSpeakError(result?.message || '没能播放');
+    showSpeakError(result?.message || t('playFailedShort'));
     return;
   }
   try {
@@ -309,39 +334,37 @@ async function playSpeech(button) {
   } catch {
     if (token === speechToken) speechSource = null;
     button.classList.remove('is-playing');
-    showSpeakError('没能播放语音。');
+    showSpeakError(t('playFailed'));
   }
 }
 
 function dictHtml(result) {
-  if (result.dictionaryPending) return '<p class="pending">正在整理音标、词性和例句…</p>';
+  if (result.dictionaryPending) return `<p class="pending">${esc(t('dictPending'))}</p>`;
   if (result.dictionaryError) return `<p class="pending">${esc(result.dictionaryError)}</p>`;
   const dictionary = result.dictionary;
   if (!dictionary || dictionary.entries.length === 0) {
     return dictionary?.note ? `<p class="pending">${esc(dictionary.note)}</p>` : '';
   }
-  const foreign = result.sourceLanguage === 'zh' ? result.targetLanguage : result.sourceLanguage;
+  const source = result.sourceLanguage;
+  const target = result.targetLanguage;
+  const speakable = (lang) => lang === 'en' || lang === 'ja';
   const senseCount = dictionary.entries.reduce((sum, entry) => sum + entry.senses.length, 0);
   return dictionary.entries.map((entry) => {
     const senses = entry.senses.map((sense) => {
       const showGloss = senseCount > 1 || !sameText(sense.glossZh, result.translation);
-      const glossParts = annotationParts(sense.glossZh, result.sourceLanguage === 'zh' ? sense.glossReading : '', foreign);
+      const glossParts = annotationParts(sense.glossZh, speakable(target) ? sense.glossTargetReading : '', target);
       const gloss = showGloss && sense.glossZh
-        ? `<p class="gloss">${result.sourceLanguage === 'zh' ? glossParts.html : esc(sense.glossZh)}</p>${result.sourceLanguage === 'zh' ? phoneticLine(glossParts.phonetic) : ''}`
+        ? `<p class="gloss">${glossParts.html}</p>${phoneticLine(glossParts.phonetic)}`
         : '';
-      const monoParts = annotationParts(sense.glossMono, result.sourceLanguage === 'zh' ? '' : sense.glossReading, result.sourceLanguage);
+      const monoParts = annotationParts(sense.glossMono, speakable(source) ? sense.glossReading : '', source);
       const mono = sense.glossMono
-        ? `<p class="mono"><span class="tag">${esc(dictionary.monoLabel)}</span>${result.sourceLanguage === 'zh' ? esc(sense.glossMono) : monoParts.html}</p>${result.sourceLanguage === 'zh' ? '' : phoneticLine(monoParts.phonetic)}`
+        ? `<p class="mono"><span class="tag">${esc(monoTag(result))}</span>${monoParts.html}</p>${phoneticLine(monoParts.phonetic)}`
         : '';
       const examples = sense.examples.map((example) => {
-        const src = result.sourceLanguage === 'zh'
-          ? { html: esc(example.text), phonetic: '' }
-          : annotationParts(example.text, example.reading, result.sourceLanguage);
-        const tr = result.sourceLanguage === 'zh'
-          ? annotationParts(example.translation, example.reading, result.targetLanguage)
-          : { html: esc(example.translation), phonetic: '' };
-        const srcSpeech = result.sourceLanguage === 'zh' ? '' : speakButton(example.text, result.sourceLanguage);
-        const trSpeech = result.sourceLanguage === 'zh' ? speakButton(example.translation, result.targetLanguage) : '';
+        const src = annotationParts(example.text, speakable(source) ? example.reading : '', source);
+        const tr = annotationParts(example.translation, speakable(target) ? example.translationReading : '', target);
+        const srcSpeech = speakButton(example.text, source);
+        const trSpeech = speakButton(example.translation, target);
         return `
           <div class="example">
             <div class="example-line">
@@ -364,6 +387,12 @@ function dictHtml(result) {
   }).join('');
 }
 
+function monoTag(result) {
+  if (result.sourceLanguage === 'ja') return t('jaJa');
+  if (result.sourceLanguage === 'zh') return t('glossTag');
+  return t('enEn');
+}
+
 function renderResult(result) {
   state.mode = 'result';
   state.result = result;
@@ -374,16 +403,16 @@ function renderResult(result) {
     ? `<p class="phonetic">${esc(result.dictionary.phonetic)}</p>`
     : '';
   const lemma = result.dictionary?.lemma && !sameText(result.dictionary.lemma, head)
-    ? `<p class="lemma">原形 ${esc(result.dictionary.lemma)}</p>`
+    ? `<p class="lemma">${esc(t('lemma', { word: result.dictionary.lemma }))}</p>`
     : '';
   const longHead = [...head].length > 18 ? ' long' : '';
   const longTranslation = [...String(result.translation || '')].length > 42 ? ' long' : '';
-  const truncated = result.truncated ? '<p class="pending">句子较长，只处理了前 800 字。</p>' : '';
+  const truncated = result.truncated ? `<p class="pending">${esc(t('truncated'))}</p>` : '';
   const sourceNote = annotationParts(result.query, result.reading, result.sourceLanguage);
   const targetNote = annotationParts(result.translation, result.translationReading, result.targetLanguage);
   if (result.kind === 'sentence') {
     showBoard(`
-      <div class="kicker"><strong>句子</strong><span>${esc(directionLabel(result))}</span></div>
+      <div class="kicker"><strong>${esc(t('sentence'))}</strong><span>${esc(directionLabel(result))}</span></div>
       <div class="example-line">
         <p class="original">${sourceNote.html}</p>
         ${speakButton(result.query, result.sourceLanguage)}
@@ -397,7 +426,7 @@ function renderResult(result) {
           </div>
           ${phoneticLine(targetNote.phonetic)}
         </div>
-        <button type="button" class="copy" data-copy="${esc(result.translation)}">复制</button>
+        <button type="button" class="copy" data-copy="${esc(result.translation)}">${esc(t('copy'))}</button>
       </div>
       ${tokensHtml(result.tokens)}
       ${truncated}
@@ -406,9 +435,11 @@ function renderResult(result) {
     `);
     return;
   }
-  const formLang = result.sourceLanguage === 'zh' ? result.targetLanguage : result.sourceLanguage;
+  const formLang = result.sourceLanguage === 'en' || result.sourceLanguage === 'ja'
+    ? result.sourceLanguage
+    : result.targetLanguage;
   showBoard(`
-    <div class="kicker"><strong>单词</strong><span>${esc(directionLabel(result))}</span></div>
+    <div class="kicker"><strong>${esc(t('word'))}</strong><span>${esc(directionLabel(result))}</span></div>
     <div class="head-row">
       <h1 class="head${longHead}">${headRuby || esc(head)}</h1>
       ${speakButton(head, result.sourceLanguage)}
@@ -423,7 +454,7 @@ function renderResult(result) {
         </div>
         ${phoneticLine(targetNote.phonetic)}
       </div>
-      <button type="button" class="copy" data-copy="${esc(result.translation)}">复制</button>
+      <button type="button" class="copy" data-copy="${esc(result.translation)}">${esc(t('copy'))}</button>
     </div>
     ${formsHtml(result.dictionary?.inflections, formLang)}
     <div class="rule"></div>
@@ -458,7 +489,7 @@ function renderError(result) {
   state.result = result;
   syncChrome();
   const setup = result.needsSetup
-    ? '<div class="actions"><button type="button" class="primary" data-settings>打开设置</button></div>'
+    ? `<div class="actions"><button type="button" class="primary" data-settings>${esc(t('openSettings'))}</button></div>`
     : '';
   const detail = result.detail ? `<p class="detail">${esc(result.detail)}</p>` : '';
   showBoard(`<p class="notice">${esc(result.message)}</p>${detail}${setup}`);
@@ -494,12 +525,12 @@ async function run(text) {
   remember(text);
   renderLoading();
   try {
-    const result = await window.fuci.lookup({ id, text, source: sourcePin() });
+    const result = await window.fuci.lookup({ id, text });
     if (id !== req) return;
     applyFinal(result);
   } catch (error) {
     if (id !== req) return;
-    renderError({ message: '查询没有完成', detail: error.message || '' });
+    renderError({ message: t('queryFailed'), detail: error.message || '' });
   }
 }
 
@@ -527,9 +558,9 @@ function bindBoard() {
     const copy = event.target.closest('[data-copy]');
     if (copy) {
       window.fuci.copy(copy.getAttribute('data-copy') || '');
-      copy.textContent = '已复制';
+      copy.textContent = t('copied');
       setTimeout(() => {
-        if (copy.isConnected) copy.textContent = '复制';
+        if (copy.isConnected) copy.textContent = t('copy');
       }, 1200);
       return;
     }
@@ -548,7 +579,7 @@ function stopAuthClock() {
 
 function formatRemaining(expiresAt) {
   const ms = Number(expiresAt) - Date.now();
-  if (ms <= 0) return '已失效';
+  if (ms <= 0) return t('expired');
   const total = Math.ceil(ms / 1000);
   const hours = Math.floor(total / 3600);
   const minutes = Math.floor((total % 3600) / 60);
@@ -568,7 +599,7 @@ function paintAuthClock() {
     return;
   }
   clock.className = auth.expired || auth.signedIn ? 'token-clock dead' : 'token-clock';
-  clock.textContent = auth.expired || auth.signedIn ? '已失效' : '未登录';
+  clock.textContent = auth.expired || auth.signedIn ? t('expired') : t('signedOut');
 }
 
 function startAuthClock() {
@@ -592,57 +623,58 @@ function openSettings(message) {
   const boot = state.bootstrap || { settings: {}, shortcutLabel: '' };
   const settings = boot.settings || {};
   const versionText = String(boot.version || '').trim();
-  const meta = [versionText ? `版本 ${versionText}` : '', boot.shortcutLabel || ''].filter(Boolean).join(' · ');
+  const meta = [versionText ? t('version', { version: versionText }) : '', boot.shortcutLabel || ''].filter(Boolean).join(' · ');
+  const opacity = opacityPercent(settings.panelOpacity);
   state.mode = 'settings';
   state.auth = boot.auth || state.auth;
   syncChrome();
   showBoard(`
-    <div class="kicker"><strong>设置</strong><span class="meta">${esc(meta)}</span></div>
+    <div class="kicker"><strong>${esc(t('settings'))}</strong><span class="meta">${esc(meta)}</span></div>
     <div id="update-offer" class="update-offer" hidden>
       <span class="update-dot"></span>
-      <span>有可用更新</span>
-      <button type="button" class="primary" id="apply-update">更新</button>
+      <span>${esc(t('updateAvailable'))}</span>
+      <button type="button" class="primary" id="apply-update">${esc(t('update'))}</button>
     </div>
-    <p class="notice">填写项目、区域和模型。一键链接会执行 gcloud auth print-access-token；如果还没登录，会自动打开浏览器登录 Google 账号。令牌大约 1 小时有效，过期后需要再点一次。英语和日语译成所选中文；中文单词和句子译成英语或日语。</p>
-    <label class="field"><span>项目 ID</span>
+    <div class="field"><span>${esc(t('uiLanguage'))}</span>
+      <div class="locales" role="listbox" aria-label="${esc(t('uiLanguage'))}">
+        ${UI_LOCALES.map((item) => `<button type="button" class="locale-choice${locale() === item.id ? ' is-selected' : ''}" data-locale="${item.id}" role="option" aria-selected="${locale() === item.id ? 'true' : 'false'}">${esc(item.label)}</button>`).join('')}
+      </div>
+      <p class="ui-hint">${esc(t('uiHint'))}</p>
+    </div>
+    <p class="notice">${esc(t('notice'))}</p>
+    <label class="field"><span>${esc(t('projectId'))}</span>
       <input id="project-id" spellcheck="false" autocapitalize="off" placeholder="my-gcp-project" value="${esc(settings.projectId || '')}" />
     </label>
-    <label class="field"><span>Location</span>
+    <label class="field"><span>${esc(t('locationLabel'))}</span>
       <input id="location" spellcheck="false" value="${esc(settings.location || 'global')}" />
     </label>
-    <label class="field"><span>模型 ID</span>
+    <label class="field"><span>${esc(t('modelId'))}</span>
       <input id="model" spellcheck="false" value="${esc(settings.model || 'gemini-3.8-flash')}" />
     </label>
     <div class="auth-row">
-      <button type="button" class="primary" id="connect-google">一键链接</button>
-      <span id="token-clock" class="token-clock">未登录</span>
+      <button type="button" class="primary" id="connect-google">${esc(t('connect'))}</button>
+      <span id="token-clock" class="token-clock">${esc(t('signedOut'))}</span>
     </div>
-    <label class="field"><span>面板不透明度 <b id="opacity-readout">${opacityPercent(settings.panelOpacity)}%</b></span>
-      <input id="panel-opacity" type="range" min="40" max="100" step="1" value="${opacityPercent(settings.panelOpacity)}" />
+    <label class="field"><span>${esc(t('opacity'))} <b id="opacity-readout">${opacity}%</b></span>
+      <input id="panel-opacity" type="range" min="40" max="100" step="1" value="${opacity}" />
     </label>
-    <div class="field"><span>主题</span>
-      <div class="themes" role="listbox" aria-label="主题">
-        ${THEMES.map((theme) => `<button type="button" class="theme-swatch${themeId(settings.theme) === theme.id ? ' is-selected' : ''}" data-theme="${theme.id}" style="--swatch:${theme.swatch}" role="option" aria-selected="${themeId(settings.theme) === theme.id ? 'true' : 'false'}" aria-label="${esc(theme.label)}">${esc(theme.label)}</button>`).join('')}
+    <div class="field"><span>${esc(t('theme'))}</span>
+      <div class="themes" role="listbox" aria-label="${esc(t('theme'))}">
+        ${THEMES.map((theme) => `<button type="button" class="theme-swatch${themeId(settings.theme) === theme.id ? ' is-selected' : ''}" data-theme="${theme.id}" style="--swatch:${theme.swatch}" role="option" aria-selected="${themeId(settings.theme) === theme.id ? 'true' : 'false'}" aria-label="${esc(t(theme.key))}">${esc(t(theme.key))}</button>`).join('')}
       </div>
     </div>
-    <label class="field"><span>外文译成</span>
+    <label class="field"><span>${esc(t('scriptLabel'))}</span>
       <select id="target">
-        <option value="zh-CN" ${settings.target !== 'zh-TW' ? 'selected' : ''}>简体中文</option>
-        <option value="zh-TW" ${settings.target === 'zh-TW' ? 'selected' : ''}>繁体中文</option>
+        <option value="zh-CN" ${settings.target !== 'zh-TW' ? 'selected' : ''}>${esc(t('simplified'))}</option>
+        <option value="zh-TW" ${settings.target === 'zh-TW' ? 'selected' : ''}>${esc(t('traditional'))}</option>
       </select>
     </label>
-    <label class="field"><span>中文译成</span>
-      <select id="zh-target">
-        <option value="en" ${settings.zhTarget !== 'ja' ? 'selected' : ''}>英语</option>
-        <option value="ja" ${settings.zhTarget === 'ja' ? 'selected' : ''}>日语</option>
-      </select>
-    </label>
-    <label class="check"><input id="login-item" type="checkbox" ${settings.openAtLogin ? 'checked' : ''} /><span>登录 macOS 时启动浮词。</span></label>
-    <pre class="help">安装包里带有 gcloud，不用另外安装 Google Cloud SDK。一键链接会打开浏览器登录，登录状态保存在本机。账号需要能调用该项目的 Cloud Translation 和 Vertex AI。</pre>
+    <label class="check"><input id="login-item" type="checkbox" ${settings.openAtLogin ? 'checked' : ''} /><span>${esc(t('launchAtLogin'))}</span></label>
+    <pre class="help">${esc(t('help'))}</pre>
     <div class="actions">
-      <button type="button" class="ghost" id="quit-app">退出</button>
-      <button type="button" class="ghost" id="restart-app">重启</button>
-      <button type="button" class="ghost" id="close-settings">完成</button>
+      <button type="button" class="ghost" id="quit-app">${esc(t('quit'))}</button>
+      <button type="button" class="ghost" id="restart-app">${esc(t('restart'))}</button>
+      <button type="button" class="ghost" id="close-settings">${esc(t('done'))}</button>
     </div>
     <p id="settings-status" class="status ${message ? 'bad' : ''}">${esc(message || '')}</p>
   `);
@@ -669,6 +701,20 @@ function openSettings(message) {
       if (saved.ok) state.bootstrap.settings = saved.settings;
     });
   });
+  document.querySelectorAll('.locale-choice').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const next = button.getAttribute('data-locale');
+      if (!next || next === locale()) return;
+      state.locale = next;
+      paintChrome();
+      const saved = await window.fuci.saveSettings(readSettingsForm());
+      if (saved.ok) {
+        state.bootstrap.settings = saved.settings;
+        state.locale = saved.settings.uiLocale || next;
+      }
+      openSettings();
+    });
+  });
 
   let leaving = false;
   async function saveAndLeave(action) {
@@ -679,7 +725,7 @@ function openSettings(message) {
     if (!saved.ok) {
       leaving = false;
       status.className = 'status bad';
-      status.textContent = saved.message || '没能保存设置';
+      status.textContent = saved.message || t('saveFailed');
       reportHeight();
       return;
     }
@@ -692,16 +738,16 @@ function openSettings(message) {
     const button = document.getElementById('apply-update');
     const status = document.getElementById('settings-status');
     button.disabled = true;
-    button.textContent = '正在更新…';
+    button.textContent = t('updating');
     status.className = 'status';
-    status.textContent = '正在从 GitHub 拉取最新代码…';
+    status.textContent = t('updatingDetail');
     reportHeight();
     const saved = await window.fuci.saveSettings(readSettingsForm());
     if (!saved.ok) {
       button.disabled = false;
-      button.textContent = '更新';
+      button.textContent = t('update');
       status.className = 'status bad';
-      status.textContent = saved.message || '没能保存设置';
+      status.textContent = saved.message || t('saveFailed');
       reportHeight();
       return;
     }
@@ -709,9 +755,9 @@ function openSettings(message) {
     const result = await window.fuci.applyUpdate();
     if (!result?.ok) {
       button.disabled = false;
-      button.textContent = '更新';
+      button.textContent = t('update');
       status.className = 'status bad';
-      status.textContent = result?.message || '更新没有完成';
+      status.textContent = result?.message || t('updateFailed');
       reportHeight();
     }
   };
@@ -722,12 +768,12 @@ function openSettings(message) {
     const saved = await window.fuci.saveSettings(readSettingsForm());
     if (!saved.ok) {
       status.className = 'status bad';
-      status.textContent = saved.message || '没能保存设置';
+      status.textContent = saved.message || t('saveFailed');
       reportHeight();
       return;
     }
     const previous = state.bootstrap.settings || {};
-    const languageChanged = previous.target !== saved.settings.target || previous.zhTarget !== saved.settings.zhTarget;
+    const languageChanged = previous.target !== saved.settings.target;
     state.bootstrap.settings = saved.settings;
     if (saved.auth) state.auth = saved.auth;
     stopAuthClock();
@@ -742,7 +788,7 @@ function openSettings(message) {
     const form = readSettingsForm();
     button.disabled = true;
     status.className = 'status';
-    status.textContent = '正在通过 gcloud 获取访问令牌。如果还没登录，浏览器会自动打开。';
+    status.textContent = t('connecting');
     const connected = await window.fuci.connectGoogle(form);
     button.disabled = false;
     if (connected.settings) state.bootstrap.settings = connected.settings;
@@ -752,31 +798,35 @@ function openSettings(message) {
     }
     paintAuthClock();
     status.className = connected.ok ? 'status ok' : 'status bad';
-    status.textContent = connected.ok ? '已登录。右侧是访问令牌剩余时间，失效后请再点一键链接。' : (connected.message || '登录没有完成');
+    status.textContent = connected.ok ? t('connected') : (connected.message || t('errLogin'));
     reportHeight();
   };
 }
 
-const SOURCE_PINS = ['', 'zh', 'ja', 'en'];
-const SOURCE_PIN_LABEL = { '': '自动', zh: '中文', ja: '日语', en: '英语' };
-const SOURCE_PIN_TITLE = {
-  '': '自动识别。两边相同的汉字（如中国人）按中文查',
-  zh: '指定按中文查',
-  ja: '指定按日语查',
-  en: '指定按英语查',
+const PAIRS = ['en-zh', 'en-ja', 'ja-zh', 'ja-en', 'zh-en', 'zh-ja'];
+const PAIR_LABEL = {
+  'en-zh': 'pairEnZh',
+  'en-ja': 'pairEnJa',
+  'ja-zh': 'pairJaZh',
+  'ja-en': 'pairJaEn',
+  'zh-en': 'pairZhEn',
+  'zh-ja': 'pairZhJa',
 };
+const PAIR_LANG = { en: 'langEn', ja: 'langJa', zh: 'langZh' };
 
-function sourcePin() {
-  const value = state.bootstrap?.settings?.sourcePin;
-  return value === 'zh' || value === 'ja' || value === 'en' ? value : '';
+function currentPair() {
+  const value = state.bootstrap?.settings?.pair;
+  return PAIRS.includes(value) ? value : 'en-zh';
 }
 
-function paintSourcePin() {
-  const pin = sourcePin();
-  langPin.textContent = SOURCE_PIN_LABEL[pin];
-  langPin.classList.toggle('is-pinned', Boolean(pin));
-  langPin.title = SOURCE_PIN_TITLE[pin];
-  langPin.setAttribute('aria-label', `查询语言：${SOURCE_PIN_LABEL[pin]}`);
+function paintPair() {
+  const pair = currentPair();
+  const label = t(PAIR_LABEL[pair]);
+  const [from, to] = pair.split('-');
+  langPin.textContent = label;
+  langPin.classList.add('is-pinned');
+  langPin.title = t('pairTitle', { from: t(PAIR_LANG[from]), to: t(PAIR_LANG[to]) });
+  langPin.setAttribute('aria-label', t('pairAria', { label }));
 }
 
 function opacityPercent(value) {
@@ -806,21 +856,20 @@ function readSettingsForm() {
     target: fieldValue('target'),
     model: fieldValue('model').trim(),
     location: fieldValue('location').trim(),
-    zhTarget: fieldValue('zh-target'),
     openAtLogin: document.getElementById('login-item').checked,
     panelOpacity: Number(fieldValue('panel-opacity')) / 100,
     theme: themeId(state.theme),
+    uiLocale: locale(),
   };
 }
 
 langPin.addEventListener('click', async () => {
-  const order = SOURCE_PINS;
-  const next = order[(order.indexOf(sourcePin()) + 1) % order.length];
-  const saved = await window.fuci.setSourcePin(next);
+  const next = PAIRS[(PAIRS.indexOf(currentPair()) + 1) % PAIRS.length];
+  const saved = await window.fuci.setPair(next);
   if (!state.bootstrap) state.bootstrap = { settings: {} };
   if (saved?.settings) state.bootstrap.settings = saved.settings;
-  else state.bootstrap.settings = { ...state.bootstrap.settings, sourcePin: next };
-  paintSourcePin();
+  else state.bootstrap.settings = { ...state.bootstrap.settings, pair: next };
+  paintPair();
   const text = input.value.trim();
   if (text && state.mode !== 'settings' && !composing) {
     clearTimeout(timer);
@@ -1083,20 +1132,112 @@ window.fuci.updateStatus().then((status) => {
   paintUpdate();
 }).catch(() => {});
 
+function sampleWord() {
+  return {
+    kind: 'word',
+    query: 'ephemeral',
+    sourceLanguage: 'en',
+    targetLanguage: 'zh',
+    translation: '短暂的；转瞬即逝的',
+    reading: '/ɪˈfem.ər.əl/',
+    dictionary: {
+      headword: 'ephemeral',
+      phonetic: '/ɪˈfem.ər.əl/',
+      lemma: '',
+      entries: [{
+        pos: 'adj.',
+        posZh: '形容词',
+        senses: [{
+          glossZh: '只持续很短时间的',
+          glossMono: 'lasting for a very short time',
+          glossReading: '/ˈlɑːstɪŋ fɔːr ə ˈveri ʃɔːt taɪm/',
+          examples: [{
+            text: 'Social media fame can be ephemeral.',
+            translation: '社交媒体上的名气可能转瞬即逝。',
+            reading: '/ˈsəʊʃl ˈmiːdiə feɪm kən bi ɪˈfem.ər.əl/',
+          }],
+        }],
+      }],
+      inflections: [
+        { label: '原级', form: 'ephemeral' },
+        { label: '比较级', form: 'more ephemeral' },
+        { label: '最高级', form: 'most ephemeral' },
+      ],
+    },
+  };
+}
+
+function sampleSentence() {
+  return {
+    kind: 'sentence',
+    query: 'Could you speak a little more slowly?',
+    sourceLanguage: 'en',
+    targetLanguage: 'zh',
+    translation: '能说得再慢一点吗？',
+    reading: '/kʊd ju spiːk ə ˈlɪtl mɔː ˈsləʊli/',
+    translationReading: 'néng shuō de zài màn yì diǎn ma',
+    tokens: [
+      { text: 'Could', reading: '/kʊd/', translation: '能够' },
+      { text: 'you', reading: '/ju/', translation: '你' },
+      { text: 'speak', reading: '/spiːk/', translation: '说' },
+      { text: 'slowly', reading: '/ˈsləʊli/', translation: '慢地' },
+    ],
+  };
+}
+
+function resetShot() {
+  if (orbMode) {
+    orbMode = false;
+    shell.classList.remove('is-orb');
+  }
+  input.value = '';
+  state.locale = 'zh';
+  if (state.bootstrap?.settings) state.bootstrap.settings.uiLocale = 'zh';
+  paintChrome();
+  hideBoard();
+}
+
+function applyShot() {
+  const shot = (location.hash || '').replace(/^#/, '');
+  if (!shot) return;
+  if (shot === 'ja' || shot === 'en' || shot === 'en-word') {
+    state.locale = shot === 'ja' ? 'ja' : 'en';
+    if (state.bootstrap?.settings) state.bootstrap.settings.uiLocale = state.locale;
+    paintChrome();
+  }
+  if (shot === 'settings' || shot === 'ja' || shot === 'en') {
+    openSettings();
+    return;
+  }
+  if (shot === 'word' || shot === 'en-word') {
+    input.value = 'ephemeral';
+    syncChrome();
+    renderResult(sampleWord());
+    return;
+  }
+  if (shot === 'sentence') {
+    input.value = 'Could you speak a little more slowly?';
+    syncChrome();
+    renderResult(sampleSentence());
+    return;
+  }
+  if (shot === 'orb') collapseToOrb();
+}
+
 window.fuci.bootstrap().then((boot) => {
   state.bootstrap = boot;
   state.auth = boot.auth || state.auth;
   state.update = boot.update || state.update;
   paintUpdate();
+  state.locale = boot.settings?.uiLocale === 'ja' || boot.settings?.uiLocale === 'en' ? boot.settings.uiLocale : 'zh';
   applyTheme(boot.settings?.theme);
   applyPanelOpacity(boot.settings?.panelOpacity);
-  paintSourcePin();
+  paintChrome();
   hint.textContent = boot.shortcutLabel || '';
   hint.hidden = !boot.shortcutLabel;
   if (boot.maxBoardHeight) boardBody.style.maxHeight = `${boot.maxBoardHeight}px`;
   if (!boot.auth?.signedIn) {
-    openSettings(boot.auth?.expired
-      ? '访问令牌已失效，请重新一键登录。'
-      : '填写项目 ID、Location 和模型 ID，然后点一键链接。');
+    openSettings(boot.auth?.expired ? t('setupExpired') : t('setupFresh'));
   } else reportHeight();
+  applyShot();
 });

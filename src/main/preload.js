@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld('fuci', {
   lookup: (payload) => ipcRenderer.invoke('lookup', payload),
   bootstrap: () => ipcRenderer.invoke('bootstrap'),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
-  setSourcePin: (source) => ipcRenderer.invoke('settings:source-pin', source),
+  setPair: (pair) => ipcRenderer.invoke('settings:pair', pair),
   authStatus: () => ipcRenderer.invoke('auth:status'),
   connectGoogle: (settings) => ipcRenderer.invoke('auth:connect', settings),
   testSettings: (settings) => ipcRenderer.invoke('settings:test', settings),

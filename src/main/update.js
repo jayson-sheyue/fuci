@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { httpFetch } = require('./http');
+const { tr } = require('../renderer/i18n');
 
 const REPO = 'jayson-sheyue/fuci';
 const BRANCH = 'main';
@@ -44,7 +45,7 @@ function run(command, args, cwd, timeout = 120000) {
     }, (error, stdout, stderr) => {
       if (error) {
         const detail = String(stderr || stdout || error.message || '').trim();
-        reject(new Error(detail || '更新没有完成'));
+        reject(new Error(detail || tr('errUpdate')));
         return;
       }
       resolve(String(stdout || ''));
@@ -78,7 +79,7 @@ async function fetchCompare(local) {
     headers: githubHeaders(),
   });
   if (response.status === 404) return null;
-  if (!response.ok) throw new Error('没有连上 GitHub');
+  if (!response.ok) throw new Error(tr('errNoGithub'));
   return response.json();
 }
 
@@ -86,9 +87,9 @@ async function remoteHead() {
   const response = await httpFetch(`https://api.github.com/repos/${REPO}/commits/${BRANCH}`, {
     headers: githubHeaders(),
   });
-  if (!response.ok) throw new Error('没有读到 GitHub 上的版本');
+  if (!response.ok) throw new Error(tr('errNoRemote'));
   const data = await response.json();
-  if (!isSha(data?.sha)) throw new Error('没有读到 GitHub 上的版本');
+  if (!isSha(data?.sha)) throw new Error(tr('errNoRemote'));
   return data.sha;
 }
 
@@ -97,7 +98,7 @@ async function gitCounts(appPath) {
   const remoteAhead = Number((await run('git', ['rev-list', '--count', `HEAD..origin/${BRANCH}`], appPath, 15000)).trim());
   const localAhead = Number((await run('git', ['rev-list', '--count', `origin/${BRANCH}..HEAD`], appPath, 15000)).trim());
   if (!Number.isFinite(remoteAhead) || !Number.isFinite(localAhead)) {
-    throw new Error('没有读到 GitHub 上的版本');
+    throw new Error(tr('errNoRemote'));
   }
   return { remoteAhead, localAhead };
 }
@@ -129,10 +130,10 @@ function readPackage(dir) {
 function installSnapshot(sourceRoot, appPath) {
   const src = path.join(sourceRoot, 'src');
   if (!fs.existsSync(path.join(src, 'main', 'index.js'))) {
-    throw new Error('更新包里没有浮词的程序文件');
+    throw new Error(tr('errNoAppFiles'));
   }
   const assets = path.join(sourceRoot, 'assets');
-  if (!fs.existsSync(assets)) throw new Error('更新包里没有资源文件');
+  if (!fs.existsSync(assets)) throw new Error(tr('errNoAssets'));
 
   fs.rmSync(path.join(appPath, 'src'), { recursive: true, force: true });
   fs.cpSync(src, path.join(appPath, 'src'), { recursive: true });
@@ -165,15 +166,15 @@ function findSnapshot(root) {
     const full = path.join(root, entry.name);
     if (fs.existsSync(path.join(full, 'src', 'main', 'index.js'))) return full;
   }
-  throw new Error('没有找到更新内容');
+  throw new Error(tr('errNoSnapshot'));
 }
 
 async function downloadSnapshot() {
   const response = await httpFetch(ARCHIVE_URL, { headers: { 'User-Agent': 'fuci' } });
-  if (!response.ok) throw new Error('没有从 GitHub 下载到最新代码');
+  if (!response.ok) throw new Error(tr('errNoDownload'));
   const bytes = Buffer.from(await response.arrayBuffer());
   if (bytes.length < 200 || bytes.length > 30 * 1024 * 1024) {
-    throw new Error('GitHub 返回的更新包大小不对');
+    throw new Error(tr('errBadArchive'));
   }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fuci-update-'));
   const archive = path.join(dir, 'source.tar.gz');
@@ -197,7 +198,7 @@ async function applyUpdate(appPath) {
       await run('git', ['pull', '--ff-only', '--autostash', 'origin', BRANCH], root);
     } catch (error) {
       if (/fast-forward|diverging|Not possible/i.test(error.message || '')) {
-        throw new Error('GitHub 上的版本不能直接快进，更新已停下来。');
+        throw new Error(tr('errUpdateFf'));
       }
       throw error;
     }
@@ -208,9 +209,9 @@ async function applyUpdate(appPath) {
   }
 
   const local = readStamp(root);
-  if (!isSha(local)) throw new Error('这个安装包没有版本记录，还不能在线更新。');
+  if (!isSha(local)) throw new Error(tr('errNoStamp'));
   const compared = await fetchCompare(local);
-  if (!offerFromCompare(compared)) throw new Error('GitHub 上没有可直接安装的新版本。');
+  if (!offerFromCompare(compared)) throw new Error(tr('errNoRelease'));
   const stamp = await remoteHead();
   const downloaded = await downloadSnapshot();
   try {

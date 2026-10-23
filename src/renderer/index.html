@@ -23,7 +23,7 @@
       <kbd id="hint"></kbd>
       <button id="clear" type="button" hidden aria-label="清除">×</button>
       <span id="busy" hidden class="busy" aria-hidden="true"></span>
-      <button id="lang" class="lang-pin" type="button" aria-label="查询语言：自动" title="自动识别。两边相同的汉字（如中国人）按中文查">自动</button>
+      <button id="lang" class="lang-pin is-pinned" type="button" aria-label="翻译方向：英→中" title="把英语译成中文。点一下切换方向。">英→中</button>
       <button id="gear" type="button" aria-label="设置" title="设置">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
           <circle cx="12" cy="12" r="3"></circle>
@@ -37,6 +37,7 @@
       <div id="board-body"></div>
     </section>
   </div>
+  <script src="i18n.js"></script>
   <script src="reading.js"></script>
   <script src="app.js"></script>
 </body>

@@ -12,7 +12,7 @@ const lookupCache = require('../src/main/lookup-cache');
 const settings = {
   projectId: 'demo',
   target: 'zh-CN',
-  zhTarget: 'en',
+  pair: 'en-zh',
   model: 'gemini-3.8-flash',
   location: 'global',
 };
@@ -48,12 +48,12 @@ test('lookup cache survives restart and skips the network', async () => {
     assert.equal(result.pinned, false);
 
     await assert.rejects(
-      () => lookup('apple', settings, { source: 'ja' }),
+      () => lookup('apple', { ...settings, pair: 'ja-zh' }, {}),
       (error) => error.message === 'TOKEN_EXPIRED'
     );
 
-    lookupCache.put(settings, 'sentence', 'ko', '12345', {
-      kind: 'sentence',
+    lookupCache.put(settings, 'word', 'en', '12345', {
+      kind: 'word',
       translation: '数字',
     });
     const numbers = await lookup('12345', settings, {});

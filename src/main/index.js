@@ -6,13 +6,14 @@ const path = require('path');
 const { explainGcpError } = require('./errors');
 const { lookup, testConnection, clearAuth, configureLookupCache, flushLookupCache } = require('./gcp');
 const { checkForUpdate, applyUpdate } = require('./update');
-const { pinnedLanguage } = require('./classify');
+const { normalizePair } = require('./classify');
 const { synthesize } = require('./tts');
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 const { alignSession, beginLogin, configureSession, sessionStatus } = require('./oauth');
 const { setFetchImplementation } = require('./http');
 const { orbHit } = require('./orb-hit');
+const { normalizeLocale, setLocale, tr } = require('../renderer/i18n');
 const { adcExists, effectiveProjectId, load, normalizeTheme, readGcloudProject, save } = require('./settings');
 
 setFetchImplementation((url, options = {}) => net.fetch(url, {
@@ -174,7 +175,7 @@ function buildMenu() {
         { role: 'about' },
         { type: 'separator' },
         {
-          label: '设置',
+          label: tr('menuSettings'),
           accelerator: 'Command+,',
           click: () => {
             showWindow();
@@ -191,10 +192,10 @@ function buildMenu() {
     },
     { role: 'editMenu' },
     {
-      label: '窗口',
+      label: tr('menuWindow'),
       submenu: [
-        { label: shortcutLabel ? `显示搜索（${shortcutLabel}）` : '显示搜索', click: showWindow },
-        { label: '隐藏', click: hideWindow },
+        { label: shortcutLabel ? tr('menuShowSearch', { shortcut: shortcutLabel }) : tr('menuShow'), click: showWindow },
+        { label: tr('menuHide'), click: hideWindow },
       ],
     },
   ];
@@ -208,13 +209,13 @@ function buildTray() {
   tray.setToolTip('浮词');
   const refresh = () => {
     const settings = load(app.getPath('userData'));
-    const project = effectiveProjectId(settings) || '未设置';
+    const project = effectiveProjectId(settings) || tr('trayUnset');
     tray.setContextMenu(Menu.buildFromTemplate([
-      { label: '显示浮词', click: showWindow },
-      { label: `项目 ${project}`, enabled: false },
+      { label: tr('trayShow'), click: showWindow },
+      { label: tr('trayProject', { project }), enabled: false },
       { type: 'separator' },
       {
-        label: '登录时启动',
+        label: tr('trayLogin'),
         type: 'checkbox',
         checked: settings.openAtLogin,
         click: (item) => {
@@ -224,7 +225,7 @@ function buildTray() {
         },
       },
       { type: 'separator' },
-      { label: '退出', click: () => app.quit() },
+      { label: tr('trayQuit'), click: () => app.quit() },
     ]));
   };
   refresh();
@@ -234,6 +235,17 @@ function buildTray() {
 
 function applyLogin(openAtLogin) {
   app.setLoginItemSettings({ openAtLogin: !!openAtLogin, openAsHidden: false });
+}
+
+function refreshLocaleChrome() {
+  setLocale(load(app.getPath('userData')).uiLocale);
+  app.setAboutPanelOptions({
+    applicationName: '浮词',
+    applicationVersion: clientVersion(),
+    credits: tr('aboutCredits'),
+  });
+  buildMenu();
+  tray?.refreshMenu?.();
 }
 
 function currentSettings() {
@@ -246,14 +258,14 @@ function normalizeForm(input) {
   const location = String(input?.location || 'global').trim() || 'global';
   const model = String(input?.model || 'gemini-3.8-flash').trim() || 'gemini-3.8-flash';
   const target = input?.target === 'zh-TW' ? 'zh-TW' : 'zh-CN';
-  const zhTarget = input?.zhTarget === 'ja' ? 'ja' : 'en';
   const openAtLogin = !!input?.openAtLogin;
   const panelOpacity = clampPanelOpacity(input?.panelOpacity);
   const theme = normalizeTheme(input?.theme);
-  if (/\s/.test(projectId)) throw new Error('项目 ID 不能包含空格');
-  if (!/^[a-z0-9-]{1,40}$/i.test(location)) throw new Error('区域格式不对');
-  if (!/^[a-zA-Z0-9._-]{1,80}$/.test(model)) throw new Error('模型 ID 格式不对');
-  return { projectId, location, model, oauthClientId: '', oauthClientSecret: '', target, zhTarget, openAtLogin, panelOpacity, theme };
+  const uiLocale = normalizeLocale(input?.uiLocale);
+  if (/\s/.test(projectId)) throw new Error(tr('errProjectSpace'));
+  if (!/^[a-z0-9-]{1,40}$/i.test(location)) throw new Error(tr('errLocation'));
+  if (!/^[a-zA-Z0-9._-]{1,80}$/.test(model)) throw new Error(tr('errModel'));
+  return { projectId, location, model, oauthClientId: '', oauthClientSecret: '', target, openAtLogin, panelOpacity, theme, uiLocale };
 }
 
 function clampPanelOpacity(value) {
@@ -277,12 +289,12 @@ function publicSettings(settings) {
     projectId: settings.projectId || '',
     location: settings.location || 'global',
     model: settings.model || 'gemini-3.8-flash',
-    target: settings.target || 'zh-CN',
-    zhTarget: settings.zhTarget === 'ja' ? 'ja' : 'en',
+    target: settings.target === 'zh-TW' ? 'zh-TW' : 'zh-CN',
+    pair: normalizePair(settings.pair, settings),
     openAtLogin: !!settings.openAtLogin,
     panelOpacity: clampPanelOpacity(settings.panelOpacity),
     theme: normalizeTheme(settings.theme),
-    sourcePin: pinnedLanguage(settings.sourcePin),
+    uiLocale: normalizeLocale(settings.uiLocale),
   };
 }
 
@@ -325,7 +337,7 @@ function registerIpc() {
       });
       return { ok: true };
     } catch (error) {
-      return { ok: false, message: error.message || '更新没有完成' };
+      return { ok: false, message: error.message || tr('errUpdate') };
     }
   });
 
@@ -335,7 +347,7 @@ function registerIpc() {
       applyLogin(next.openAtLogin);
       alignSession(next);
       clearAuth();
-      tray?.refreshMenu?.();
+      refreshLocaleChrome();
       return { ok: true, settings: publicSettings(next), auth: sessionStatus() };
     } catch (error) {
       return { ok: false, message: error.message };
@@ -350,15 +362,15 @@ function registerIpc() {
       applyLogin(next.openAtLogin);
       alignSession(next);
       clearAuth();
-      tray?.refreshMenu?.();
+      refreshLocaleChrome();
       const message = await testConnection(currentSettings(), controller.signal);
       return { ok: true, message };
     } catch (error) {
       if (error.name === 'AbortError') {
-        return { ok: false, message: '测试超时，请再试一次。', detail: '' };
+        return { ok: false, message: tr('errTestTimeout'), detail: '' };
       }
       const explained = explainGcpError(error);
-      const prefix = error.phase === 'dictionary' ? '翻译可用，词条接口失败。' : '';
+      const prefix = error.phase === 'dictionary' ? tr('errDictPrefix') : '';
       return {
         ok: false,
         message: prefix ? `${prefix}${explained.message}` : explained.message,
@@ -377,11 +389,11 @@ function registerIpc() {
       const next = save(app.getPath('userData'), normalizeForm(input));
       applyLogin(next.openAtLogin);
       alignSession(next);
-      tray?.refreshMenu?.();
+      refreshLocaleChrome();
       const auth = await beginLogin(next);
       return { ok: true, auth, settings: publicSettings(next) };
     } catch (error) {
-      return { ok: false, message: error.message || '登录没有完成', auth: sessionStatus() };
+      return { ok: false, message: error.message || tr('errLogin'), auth: sessionStatus() };
     }
   });
 
@@ -391,7 +403,7 @@ function registerIpc() {
       win.setIgnoreMouseEvents(false);
     }
     const result = await dialog.showOpenDialog(win, {
-      title: '选择服务账号 JSON',
+      title: tr('pickKey'),
       properties: ['openFile'],
       filters: [{ name: 'JSON', extensions: ['json'] }],
     });
@@ -404,14 +416,14 @@ function registerIpc() {
       const audio = await synthesize(payload?.text, payload?.lang, currentSettings());
       return { ok: true, audio };
     } catch (error) {
-      if (error.name === 'AbortError') return { ok: false, message: '播放已取消' };
+      if (error.name === 'AbortError') return { ok: false, message: tr('errPlayCancel') };
       const explained = explainGcpError(error);
       return { ok: false, message: explained.message };
     }
   });
 
-  ipcMain.handle('settings:source-pin', (_event, source) => {
-    const next = save(app.getPath('userData'), { sourcePin: pinnedLanguage(source) });
+  ipcMain.handle('settings:pair', (_event, pair) => {
+    const next = save(app.getPath('userData'), { pair: normalizePair(pair) });
     return { ok: true, settings: publicSettings(next) };
   });
 
@@ -432,7 +444,6 @@ function registerIpc() {
     try {
       return await lookup(text, currentSettings(), {
         signal: controller.signal,
-        source: payload?.source,
         onProgress: (result) => {
           if (lookupJob?.id !== id || !win || win.isDestroyed()) return;
           event.sender.send('lookup-progress', { id, result });
@@ -441,7 +452,7 @@ function registerIpc() {
     } catch (error) {
       if (error.name === 'AbortError') {
         if (lookupJob?.id === id && lookupJob.reason === 'timeout') {
-          return { kind: 'error', message: '查询超时，请再试一次。' };
+          return { kind: 'error', message: tr('errLookupTimeout') };
         }
         return { kind: 'aborted' };
       }
@@ -568,11 +579,7 @@ app.on('will-quit', () => globalShortcut.unregisterAll());
 if (gotLock) app.whenReady().then(() => {
   const icon = nativeImage.createFromPath(asset('icon.png'));
   if (process.platform === 'darwin' && app.dock && !icon.isEmpty()) app.dock.setIcon(icon);
-  app.setAboutPanelOptions({
-    applicationName: '浮词',
-    applicationVersion: app.getVersion(),
-    credits: '译文：Cloud Translation API\n词条：Vertex AI Gemini',
-  });
+  refreshLocaleChrome();
   configureSession(app.getPath('userData'));
   configureLookupCache(app.getPath('userData'));
   alignSession(load(app.getPath('userData')));

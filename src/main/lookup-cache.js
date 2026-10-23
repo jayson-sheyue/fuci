@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const MAX_ENTRIES = 400;
-const VERSION = 1;
+const VERSION = 2;
 
 const entries = new Map();
 let filePath = '';
@@ -14,8 +14,8 @@ let timer = null;
 function scopeParts(settings) {
   return [
     settings.projectId || '',
+    settings.pair || '',
     settings.target || '',
-    settings.zhTarget || '',
     settings.model || '',
     settings.location || '',
   ];

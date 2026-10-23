@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { classify, fallbackLanguage, pinnedLanguage, resolveLanguage, scriptLanguage } = require('../src/main/classify');
+const { classify, fallbackLanguage, normalizePair, pinnedLanguage, resolveLanguage, scriptLanguage } = require('../src/main/classify');
 
 test('script hints skip mixed and kanji-only text', () => {
   assert.equal(scriptLanguage('ephemeral'), 'en');
@@ -29,6 +29,10 @@ test('shared kanji stays Chinese and Japanese glyph forms stay Japanese', () => 
   assert.equal(fallbackLanguage('中国人'), 'zh');
   assert.equal(pinnedLanguage('ja'), 'ja');
   assert.equal(pinnedLanguage('auto'), '');
+  assert.equal(normalizePair('ja-en'), 'ja-en');
+  assert.equal(normalizePair('', { sourcePin: 'zh', zhTarget: 'ja' }), 'zh-ja');
+  assert.equal(normalizePair('', { sourcePin: 'ja' }), 'ja-zh');
+  assert.equal(normalizePair('auto'), 'en-zh');
 });
 
 test('simplified Chinese and pronouns are not looked up as Japanese', () => {
