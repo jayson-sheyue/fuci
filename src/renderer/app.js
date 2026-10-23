@@ -1185,6 +1185,234 @@ function sampleSentence() {
   };
 }
 
+function sampleJaZhWord() {
+  return {
+    kind: 'word',
+    query: '優しい',
+    sourceLanguage: 'ja',
+    targetLanguage: 'zh',
+    translation: '温柔的；亲切的',
+    dictionary: {
+      headword: '優しい',
+      phonetic: '優(やさ)しい',
+      lemma: '',
+      entries: [{
+        pos: '形',
+        posZh: '形容词',
+        senses: [{
+          glossZh: '待人温柔、体贴',
+          glossMono: '相手を思いやる気持ちがある。',
+          glossReading: '相手(あいて)を思(おも)いやる気持(きも)ちがある。',
+          examples: [{
+            text: '彼女はとても優しい。',
+            translation: '她非常温柔。',
+            reading: '彼女(かのじょ)はとても優(やさ)しい。',
+          }],
+        }],
+      }],
+      inflections: [
+        { label: '基本形', form: '優しい', reading: '優(やさ)しい' },
+        { label: '过去', form: '優しかった', reading: '優(やさ)しかった' },
+        { label: '否定', form: '優しくない', reading: '優(やさ)しくない' },
+      ],
+    },
+  };
+}
+
+function sampleZhEnWord() {
+  return {
+    kind: 'word',
+    query: '学习',
+    sourceLanguage: 'zh',
+    targetLanguage: 'en',
+    translation: 'to study',
+    translationReading: '/tə ˈstʌdi/',
+    dictionary: {
+      headword: '学习',
+      phonetic: 'xué xí',
+      lemma: '',
+      entries: [{
+        pos: '动',
+        posZh: 'verb',
+        senses: [{
+          glossZh: 'to study; to learn',
+          glossTargetReading: '/tə ˈstʌdi/',
+          glossMono: '通过阅读或练习掌握知识。',
+          examples: [{
+            text: '她每天晚上学习日语。',
+            translation: 'She studies Japanese every evening.',
+            translationReading: '/ʃi ˈstʌdiz ˌdʒæpəˈniːz ˈevri ˈiːvnɪŋ/',
+          }],
+        }],
+      }],
+      inflections: [
+        { label: 'base', form: 'study', reading: '/ˈstʌdi/' },
+        { label: '-s', form: 'studies', reading: '/ˈstʌdiz/' },
+        { label: '-ing', form: 'studying', reading: '/ˈstʌdiɪŋ/' },
+        { label: '-ed', form: 'studied', reading: '/ˈstʌdid/' },
+      ],
+    },
+  };
+}
+
+function sampleJaEnWord() {
+  return {
+    kind: 'word',
+    query: '優しい',
+    sourceLanguage: 'ja',
+    targetLanguage: 'en',
+    translation: 'kind; gentle',
+    translationReading: '/kaɪnd/',
+    dictionary: {
+      headword: '優しい',
+      phonetic: '優(やさ)しい',
+      lemma: '',
+      entries: [{
+        pos: '形',
+        posZh: 'i-adjective',
+        senses: [{
+          glossZh: 'kind and gentle toward others',
+          glossTargetReading: '/kaɪnd ənd ˈdʒentl/',
+          glossMono: '相手を思いやる気持ちがある。',
+          glossReading: '相手(あいて)を思(おも)いやる気持(きも)ちがある。',
+          examples: [{
+            text: '彼女はとても優しい。',
+            reading: '彼女(かのじょ)はとても優(やさ)しい。',
+            translation: 'She is very kind.',
+            translationReading: '/ʃi ɪz ˈveri kaɪnd/',
+          }],
+        }],
+      }],
+      inflections: [
+        { label: 'plain', form: '優しい', reading: '優(やさ)しい' },
+        { label: 'past', form: '優しかった', reading: '優(やさ)しかった' },
+        { label: 'negative', form: '優しくない', reading: '優(やさ)しくない' },
+      ],
+    },
+  };
+}
+
+function sampleZhJaWord() {
+  return {
+    kind: 'word',
+    query: '学习',
+    sourceLanguage: 'zh',
+    targetLanguage: 'ja',
+    translation: '勉強する',
+    translationReading: '勉強(べんきょう)する',
+    dictionary: {
+      headword: '学习',
+      phonetic: 'xué xí',
+      lemma: '',
+      entries: [{
+        pos: '动',
+        posZh: '動詞',
+        senses: [{
+          glossZh: '学習する、勉強する',
+          glossTargetReading: '学習(がくしゅう)する、勉強(べんきょう)する',
+          glossMono: '通过阅读或练习掌握知识。',
+          examples: [{
+            text: '她每天晚上学习日语。',
+            translation: '彼女は毎晩日本語を勉強する。',
+            translationReading: '彼女(かのじょ)は毎晩(まいばん)日本語(にほんご)を勉強(べんきょう)する。',
+          }],
+        }],
+      }],
+      inflections: [
+        { label: '辞書形', form: '勉強する', reading: '勉強(べんきょう)する' },
+        { label: 'ます形', form: '勉強します', reading: '勉強(べんきょう)します' },
+        { label: 'て形', form: '勉強して', reading: '勉強(べんきょう)して' },
+      ],
+    },
+  };
+}
+
+function sampleEnJaWord() {
+  return {
+    kind: 'word',
+    query: 'study',
+    sourceLanguage: 'en',
+    targetLanguage: 'ja',
+    translation: '勉強する',
+    translationReading: '勉強(べんきょう)する',
+    dictionary: {
+      headword: 'study',
+      phonetic: '/ˈstʌdi/',
+      lemma: '',
+      entries: [{
+        pos: 'v.',
+        posZh: '動詞',
+        senses: [{
+          glossZh: '学習する、勉強する',
+          glossTargetReading: '学習(がくしゅう)する、勉強(べんきょう)する',
+          glossMono: 'to learn by reading or practice',
+          glossReading: '/tə lɜːn baɪ ˈriːdɪŋ ɔː ˈpræktɪs/',
+          examples: [{
+            text: 'She studies Japanese every evening.',
+            reading: '/ʃi ˈstʌdiz ˌdʒæpəˈniːz ˈevri ˈiːvnɪŋ/',
+            translation: '彼女は毎晩日本語を勉強する。',
+            translationReading: '彼女(かのじょ)は毎晩(まいばん)日本語(にほんご)を勉強(べんきょう)する。',
+          }],
+        }],
+      }],
+      inflections: [
+        { label: '原形', form: 'study', reading: '/ˈstʌdi/' },
+        { label: '三単', form: 'studies', reading: '/ˈstʌdiz/' },
+        { label: '過去', form: 'studied', reading: '/ˈstʌdid/' },
+      ],
+    },
+  };
+}
+
+function sampleZhEnSentence() {
+  return {
+    kind: 'sentence',
+    query: '今天的会议改到三点。',
+    sourceLanguage: 'zh',
+    targetLanguage: 'en',
+    translation: "Today's meeting has been moved to three.",
+    reading: 'jīn tiān de huì yì gǎi dào sān diǎn',
+    translationReading: '/təˈdeɪz ˈmiːtɪŋ həz bɪn muːvd tə θriː/',
+    tokens: [
+      { text: '今天', reading: 'jīn tiān', translation: 'today' },
+      { text: '会议', reading: 'huì yì', translation: 'meeting' },
+      { text: '改到', reading: 'gǎi dào', translation: 'moved to' },
+      { text: '三点', reading: 'sān diǎn', translation: "three o'clock" },
+    ],
+  };
+}
+
+function sampleEnJaSentence() {
+  return {
+    kind: 'sentence',
+    query: 'The coffee here is a little strong.',
+    sourceLanguage: 'en',
+    targetLanguage: 'ja',
+    translation: 'ここのコーヒーは少し濃いです。',
+    reading: '/ðə ˈkɒfi hɪər ɪz ə ˈlɪtl strɒŋ/',
+    translationReading: 'ここのコーヒーは少(すこ)し濃(こ)いです。',
+    tokens: [
+      { text: 'coffee', reading: '/ˈkɒfi/', translation: 'コーヒー' },
+      { text: 'here', reading: '/hɪər/', translation: 'ここ' },
+      { text: 'a little', reading: '/ə ˈlɪtl/', translation: '少し' },
+      { text: 'strong', reading: '/strɒŋ/', translation: '濃い' },
+    ],
+  };
+}
+
+const LOOKUP_SHOTS = {
+  word: { pair: 'en-zh', query: 'ephemeral', sample: sampleWord },
+  sentence: { pair: 'en-zh', query: 'Could you speak a little more slowly?', sample: sampleSentence },
+  'word-ja': { pair: 'ja-zh', query: '優しい', sample: sampleJaZhWord },
+  'en-ui-word': { pair: 'en-zh', query: 'ephemeral', sample: sampleWord },
+  'en-zh-word': { pair: 'zh-en', query: '学习', sample: sampleZhEnWord },
+  'en-ja-word': { pair: 'ja-en', query: '優しい', sample: sampleJaEnWord },
+  'en-sentence': { pair: 'zh-en', query: '今天的会议改到三点。', sample: sampleZhEnSentence },
+  'ja-zh-word': { pair: 'zh-ja', query: '学习', sample: sampleZhJaWord },
+  'ja-en-word': { pair: 'en-ja', query: 'study', sample: sampleEnJaWord },
+  'ja-sentence': { pair: 'en-ja', query: 'The coffee here is a little strong.', sample: sampleEnJaSentence },
+};
+
 function resetShot() {
   if (orbMode) {
     orbMode = false;
@@ -1221,9 +1449,20 @@ function applyShot() {
   if (!shot) return;
   const lang = shotLocale(shot);
   const kind = shotKind(shot);
+  const lookup = LOOKUP_SHOTS[shot];
+  const pair = lookup?.pair || (lang === 'en' ? 'zh-en' : lang === 'ja' ? 'zh-ja' : 'en-zh');
   state.locale = lang;
-  if (state.bootstrap?.settings) state.bootstrap.settings.uiLocale = lang;
+  if (state.bootstrap?.settings) {
+    state.bootstrap.settings.uiLocale = lang;
+    state.bootstrap.settings.pair = pair;
+  }
   paintChrome();
+  if (lookup) {
+    input.value = lookup.query;
+    syncChrome();
+    renderResult(lookup.sample());
+    return;
+  }
   if (kind === 'look') {
     if (state.bootstrap?.settings) {
       state.bootstrap.settings.theme = 'night';
@@ -1246,18 +1485,6 @@ function applyShot() {
   }
   if (kind === 'settings') {
     openSettings();
-    return;
-  }
-  if (kind === 'word') {
-    input.value = 'ephemeral';
-    syncChrome();
-    renderResult(sampleWord());
-    return;
-  }
-  if (kind === 'sentence') {
-    input.value = 'Could you speak a little more slowly?';
-    syncChrome();
-    renderResult(sampleSentence());
     return;
   }
   if (kind === 'orb') collapseToOrb();

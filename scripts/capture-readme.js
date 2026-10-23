@@ -5,9 +5,9 @@ const fs = require('fs');
 const path = require('path');
 
 const shots = [
-  'bar', 'word', 'sentence', 'orb', 'settings', 'look',
-  'en-bar', 'en-word', 'en-sentence', 'en-orb', 'en-settings', 'en-look',
-  'ja-bar', 'ja-word', 'ja-sentence', 'ja-orb', 'ja-settings', 'ja-look',
+  'bar', 'word', 'sentence', 'word-ja', 'orb', 'settings', 'look',
+  'en-bar', 'en-zh-word', 'en-ja-word', 'en-sentence', 'en-ui-word', 'en-orb', 'en-settings', 'en-look',
+  'ja-bar', 'ja-zh-word', 'ja-en-word', 'ja-sentence', 'ja-orb', 'ja-settings', 'ja-look',
 ];
 
 function shotPath(dir, shot) {

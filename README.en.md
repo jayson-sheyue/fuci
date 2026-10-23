@@ -16,19 +16,23 @@ Most of the time it is only a search bar, so it does not cover the page.
 
 ![Floating search bar](docs/en/bar.png)
 
-A word opens into a card: translation, pronunciation, part of speech, a same-language gloss, an example, and a speaker button.
+A Chinese word opens into an English card: translation, pronunciation, part of speech, a same-language gloss, an example, and a speaker button. The direction button says ZH→EN.
 
-![Word card](docs/en/word.png)
+![Chinese into English](docs/en/zh-word.png)
 
-A sentence stays a sentence. You get the translation, a pronunciation line, and a short gloss for each word.
+A Japanese word does the same, with the direction set to JA→EN.
 
-![Sentence card](docs/en/sentence.png)
+![Japanese into English](docs/en/ja-word.png)
+
+A sentence stays a sentence. You get the English translation, a pronunciation line, and a short gloss for each word.
+
+![Chinese sentence into English](docs/en/sentence.png)
 
 Double-click the magnifying glass to collapse 浮词 into an orb. Double-click the orb to open it again.
 
 ![Floating orb](docs/en/orb.png)
 
-Interface language is the first control in settings. Choose 中文, 日本語, or English and the buttons and menus switch at once. The translation itself still follows the direction button, so an English interface can keep translating English into Chinese.
+Interface language is the first control in settings. Choose 中文, 日本語, or English and the buttons and menus switch at once. Translation direction stays on the search bar, separate from that choice.
 
 ![Interface language in settings](docs/en/settings.png)
 
