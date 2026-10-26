@@ -503,6 +503,12 @@ async function lookup(text, settings, { signal, onProgress } = {}) {
   const original = String(text || '').trim();
   if (!original) return { kind: 'empty' };
   const keyMode = usesApiKey(settings);
+  if (keyMode && !String(settings.geminiApiKey || '').trim()) {
+    return {
+      kind: 'setup',
+      message: tr('errFillKey'),
+    };
+  }
   if (!keyMode && !settings.projectId) {
     return {
       kind: 'setup',
@@ -647,6 +653,9 @@ async function lookup(text, settings, { signal, onProgress } = {}) {
 
 async function testConnection(settings, signal) {
   if (usesApiKey(settings)) {
+    if (!String(settings.geminiApiKey || '').trim()) {
+      throw Object.assign(new Error(tr('errFillKey')), { status: 0 });
+    }
     await geminiTranslate({ ...settings, pair: 'en-zh' }, '', 'hello', 'en', signal);
     return tr('errKeyReady');
   }

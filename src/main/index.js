@@ -14,7 +14,7 @@ const { alignSession, beginLogin, configureSession, sessionStatus } = require('.
 const { setFetchImplementation } = require('./http');
 const { orbHit } = require('./orb-hit');
 const { normalizeLocale, setLocale, tr } = require('../renderer/i18n');
-const { adcExists, effectiveProjectId, engineMode, load, normalizeTheme, readGcloudProject, save, validateGeminiKey } = require('./settings');
+const { adcExists, effectiveProjectId, engineMode, load, normalizeRoute, normalizeTheme, readGcloudProject, save, validateGeminiKey } = require('./settings');
 
 setFetchImplementation((url, options = {}) => net.fetch(url, {
   method: options.method,
@@ -256,6 +256,7 @@ function currentSettings() {
   return {
     ...stored,
     engine,
+    route: normalizeRoute(stored.route),
     geminiApiKey: String(stored.geminiApiKey || '').trim(),
     projectId: engine === 'gemini' ? '' : effectiveProjectId(stored),
   };
@@ -279,7 +280,8 @@ function normalizeForm(input) {
   }
   if (/\s/.test(projectId)) throw new Error(tr('errProjectSpace'));
   if (!/^[a-z0-9-]{1,40}$/i.test(location)) throw new Error(tr('errLocation'));
-  return { projectId, geminiApiKey, location, model, ttsModel, oauthClientId: '', oauthClientSecret: '', target, openAtLogin, panelOpacity, theme, uiLocale };
+  const route = normalizeRoute(input?.route);
+  return { projectId, geminiApiKey, location, model, ttsModel, route, oauthClientId: '', oauthClientSecret: '', target, openAtLogin, panelOpacity, theme, uiLocale };
 }
 
 function modelId(value, fallback) {
@@ -309,6 +311,7 @@ function publicSettings(settings) {
     projectId: settings.projectId || '',
     geminiApiKey: String(settings.geminiApiKey || '').trim(),
     engine: engineMode(settings),
+    route: normalizeRoute(settings.route),
     location: settings.location || 'global',
     model: settings.model || 'gemini-3.8-flash',
     ttsModel: settings.ttsModel || 'gemini-3.1-flash-tts-preview',

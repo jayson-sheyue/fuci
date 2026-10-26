@@ -17,6 +17,7 @@ const DEFAULTS = {
   oauthClientId: '',
   oauthClientSecret: '',
   location: 'global',
+  route: 'auto',
   model: 'gemini-3.8-flash',
   ttsModel: 'gemini-3.1-flash-tts-preview',
   target: 'zh-CN',
@@ -82,7 +83,14 @@ function geminiApiKey(settings) {
   return String(settings?.geminiApiKey || '').trim();
 }
 
+function normalizeRoute(value) {
+  return value === 'gcp' || value === 'gemini' ? value : 'auto';
+}
+
 function engineMode(settings) {
+  const route = normalizeRoute(settings?.route);
+  if (route === 'gcp') return 'gcp';
+  if (route === 'gemini') return 'gemini';
   if (String(settings?.projectId || '').trim()) return 'gcp';
   if (geminiApiKey(settings)) return 'gemini';
   return 'gcp';
@@ -111,6 +119,7 @@ module.exports = {
   adcExists,
   effectiveProjectId,
   geminiApiKey,
+  normalizeRoute,
   engineMode,
   usesApiKey,
   validateGeminiKey,

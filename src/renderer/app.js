@@ -673,6 +673,12 @@ function openSettings(message, page = 'home') {
     <div data-settings-page="account" hidden>
       <p class="notice">${esc(t('notice'))}</p>
       <p class="mode-now">${esc(modeNow(settings))}</p>
+      <div class="field"><span>${esc(t('routeLabel'))}</span>
+        <div class="locales" role="listbox" aria-label="${esc(t('routeLabel'))}">
+          ${[['auto', 'routeAuto'], ['gcp', 'routeGcp'], ['gemini', 'routeGemini']].map(([id, key]) => `<button type="button" class="locale-choice route-choice${(settings.route || 'auto') === id ? ' is-selected' : ''}" data-route="${id}" role="option" aria-selected="${(settings.route || 'auto') === id ? 'true' : 'false'}">${esc(t(key))}</button>`).join('')}
+        </div>
+        <p class="ui-hint">${esc(t('routeHint'))}</p>
+      </div>
       <div class="setup-block">
         <p class="mode-title">${esc(t('modeGcpTitle'))}</p>
         <label class="field"><span>${esc(t('projectId'))}</span>
@@ -839,7 +845,8 @@ function openSettings(message, page = 'home') {
     const button = document.getElementById('check-key');
     const status = document.getElementById('settings-status');
     const form = readSettingsForm();
-    if (form.projectId) {
+    const fullMode = form.route === 'gcp' || (form.route !== 'gemini' && form.projectId);
+    if (fullMode) {
       status.className = 'status';
       status.textContent = t('modeGcpNow');
       reportHeight();
@@ -865,7 +872,7 @@ function openSettings(message, page = 'home') {
     const button = document.getElementById('connect-google');
     const status = document.getElementById('settings-status');
     const form = readSettingsForm();
-    if (!form.projectId && form.geminiApiKey) {
+    if (form.route !== 'gcp' && !form.projectId && form.geminiApiKey) {
       status.className = 'status';
       status.textContent = t('keyNoConnect');
       reportHeight();
@@ -899,6 +906,30 @@ function openSettings(message, page = 'home') {
     button.addEventListener('click', () => {
       paintSettingsNav();
       showSettingsPage(button.getAttribute('data-open-page'));
+    });
+  });
+  document.querySelectorAll('.route-choice').forEach((button) => {
+    button.addEventListener('click', async () => {
+      document.querySelectorAll('.route-choice').forEach((node) => {
+        const selected = node === button;
+        node.classList.toggle('is-selected', selected);
+        node.setAttribute('aria-selected', selected ? 'true' : 'false');
+      });
+      const saved = await window.fuci.saveSettings(readSettingsForm());
+      const status = document.getElementById('settings-status');
+      if (!saved.ok) {
+        status.className = 'status bad';
+        status.textContent = saved.message || t('saveFailed');
+        reportHeight();
+        return;
+      }
+      state.bootstrap.settings = saved.settings;
+      const mode = document.querySelector('.mode-now');
+      if (mode) mode.textContent = modeNow(saved.settings);
+      paintSettingsNav();
+      status.className = 'status';
+      status.textContent = modeNow(saved.settings);
+      reportHeight();
     });
   });
   document.getElementById('settings-back').onclick = () => {
@@ -986,8 +1017,15 @@ function paintSettingsNav() {
   if (look) look.textContent = lookSummary(form);
 }
 
+function chosenRoute(settings) {
+  return settings?.route === 'gcp' || settings?.route === 'gemini' ? settings.route : 'auto';
+}
+
 function accountSummary(settings) {
+  const route = chosenRoute(settings);
   const project = String(settings?.projectId || '').trim();
+  if (route === 'gemini') return t('modeKeyTitle');
+  if (route === 'gcp') return project || state.bootstrap?.gcloudProject || t('modeGcpTitle');
   if (project) return project;
   if (String(settings?.geminiApiKey || '').trim()) return t('modeKeyTitle');
   if (state.bootstrap?.gcloudProject) return state.bootstrap.gcloudProject;
@@ -1006,6 +1044,9 @@ function lookSummary(settings) {
 }
 
 function modeNow(settings) {
+  const route = chosenRoute(settings);
+  if (route === 'gemini') return t('modeKeyNow');
+  if (route === 'gcp') return t('modeGcpNow');
   if (String(settings?.projectId || '').trim()) return t('modeGcpNow');
   if (String(settings?.geminiApiKey || '').trim()) return t('modeKeyNow');
   if (state.bootstrap?.gcloudProject) return t('modeGcpNow');
@@ -1016,6 +1057,7 @@ function readSettingsForm() {
   return {
     projectId: fieldValue('project-id').trim(),
     geminiApiKey: fieldValue('gemini-api-key').trim(),
+    route: document.querySelector('.route-choice.is-selected')?.getAttribute('data-route') || 'auto',
     target: fieldValue('target'),
     model: fieldValue('model').trim(),
     ttsModel: fieldValue('tts-model').trim(),

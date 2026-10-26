@@ -22,6 +22,15 @@ test('an API key alone uses the Gemini API and skips Cloud Translation', () => {
   );
 });
 
+test('an explicit route chooses the path when both a project and a key are saved', () => {
+  const both = { projectId: 'demo', geminiApiKey: 'AIzaSyExampleKey123', model: 'gemini-3.8-flash', location: 'global' };
+  assert.equal(engineMode({ ...both, route: 'auto' }), 'gcp');
+  assert.equal(engineMode({ ...both, route: 'gemini' }), 'gemini');
+  assert.match(modelUrl({ ...both, route: 'gemini' }), /generativelanguage\.googleapis\.com/);
+  assert.equal(usesApiKey({ ...both, route: 'gcp' }), false);
+  assert.equal(engineMode({ projectId: '', geminiApiKey: '', route: 'gemini' }), 'gemini');
+});
+
 test('a blank setup stays on the GCP path so an existing gcloud project can still be used', () => {
   assert.equal(engineMode({ projectId: '', geminiApiKey: '' }), 'gcp');
   assert.equal(usesApiKey({ projectId: '  ', geminiApiKey: '' }), false);
