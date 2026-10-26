@@ -27,10 +27,11 @@ app.setName('浮词');
 
 const WINDOW_WIDTH = 520;
 const ORB_WINDOW = 116;
+const IS_WIN = process.platform === 'win32';
 let windowMode = 'bar';
 const SHORTCUTS = [
-  { accelerator: 'CommandOrControl+Shift+Space', label: '⌘⇧Space' },
-  { accelerator: 'CommandOrControl+Shift+D', label: '⌘⇧D' },
+  { accelerator: 'CommandOrControl+Shift+Space', label: IS_WIN ? 'Ctrl+Shift+Space' : '⌘⇧Space' },
+  { accelerator: 'CommandOrControl+Shift+D', label: IS_WIN ? 'Ctrl+Shift+D' : '⌘⇧D' },
 ];
 
 let win = null;
@@ -96,6 +97,7 @@ function createWindow() {
     backgroundColor: '#00000000',
     roundedCorners: false,
     acceptFirstMouse: true,
+    ...(IS_WIN ? { icon: asset('icon.png') } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -108,6 +110,7 @@ function createWindow() {
 
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setAlwaysOnTop(true, 'floating');
+  if (IS_WIN) win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (event) => event.preventDefault());
 
@@ -203,8 +206,10 @@ function buildMenu() {
 }
 
 function buildTray() {
-  const image = nativeImage.createFromPath(asset('trayTemplate.png'));
-  image.setTemplateImage(true);
+  const image = IS_WIN
+    ? nativeImage.createFromPath(asset('icon.png')).resize({ width: 16, height: 16 })
+    : nativeImage.createFromPath(asset('trayTemplate.png'));
+  if (!IS_WIN) image.setTemplateImage(true);
   tray = new Tray(image);
   tray.setToolTip('浮词');
   const refresh = () => {

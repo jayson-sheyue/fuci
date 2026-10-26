@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **中文** — 查一个词，不该离开正在读的这一页。**[快速上手 ↓](#保姆级上手教程)** · **[下载安装包 (v1.3.7) ↓](#第一步下载与安装)**
+> **中文** — 查一个词，不该离开正在读的这一页。**[快速上手 ↓](#保姆级上手教程)** · **[macOS 下载 (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)** · **[Windows 下载 (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-win-x64.zip)**
 >
 > **English** — One word should not make you leave the page. **[Read in English →](README.en.md)**
 >
@@ -8,7 +8,7 @@
 
 读外文资料、论文或网页时，读到一半要查一个生词，一旦切去浏览器或词典窗口，回来时往往已经找不到刚才读到的那一行。
 
-**浮词**是一个常驻在 macOS 桌面最上层的轻量悬浮词典与翻译工具。它平时只是一条半透明搜索框或一颗桌面悬浮球，按 `⌘⇧Space` 随时呼出，查完按 `Esc` 收起，视线始终停留在你正在读的那一页上。
+**浮词**是一个常驻在桌面最上层的轻量悬浮词典与翻译工具（支持 **macOS** 与 **Windows**）。它平时只是一条半透明搜索框或一颗桌面悬浮球，按 `⌘⇧Space`（Windows 为 `Ctrl+Shift+Space`）随时呼出，查完按 `Esc` 收起，视线始终停留在你正在读的那一页上。
 
 ![查一个词，不用离开这一页](docs/lookup.gif)
 
@@ -73,10 +73,10 @@
 
 ### 第一步：下载与安装
 
-> **系统要求**：搭载 Apple 芯片（M1 / M2 / M3 / M4，`arm64`）的 Mac。
+在 [GitHub Releases 发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.7) 选择对应系统的最新安装包：
 
-1. 在 [GitHub Releases 发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.7) 下载最新安装包：
-   - **[点击下载 fuci-1.3.7-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)**
+#### 🍎 macOS（Apple 芯片 M1 / M2 / M3 / M4，`arm64`）
+1. **[点击下载 fuci-1.3.7-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)**
 2. 双击打开下载好的 `.dmg` 文件，将 **「浮词」** 拖进 **「应用程序（Applications）」** 文件夹。
 3. **首次打开必看（解决 macOS 未公证弹窗）**：
    从浏览器下载的开源安装包没有苹果商业公证。第一次打开如果弹出 `“浮词” Not Opened（未打开“浮词”）`，请先点 **Done（完成）**（**切勿**点 Move to Trash / 移到废纸篓），然后任选以下一种方式解除限制：
@@ -86,6 +86,11 @@
      open /Applications/浮词.app
      ```
    - **方式 B（系统设置点选）**：点 Done 之后，打开 Mac「系统设置 → 隐私与安全性」，滑到下方「安全性」一栏，点击 **「仍要打开（Open Anyway）」**。
+
+#### 🪟 Windows（Windows 10 / 11 64 位，`x64` 免安装绿色版）
+1. **[点击下载 fuci-1.3.7-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-win-x64.zip)**
+2. 将压缩包完整解压到任意目录（如 `D:\Apps\Fuci-win32-x64`）。
+3. 双击目录中的 **`Fuci.exe`** 即可直接启动（若弹出 Windows SmartScreen 提示，点击「更多信息 → 仍要运行」即可；建议搭配下方的 **AI Studio 轻量模式** 使用，开箱即用）。
 
 ---
 
@@ -147,7 +152,7 @@
 
 | 操作 | 方法 / 快捷键 |
 | :--- | :--- |
-| **呼出 / 聚焦搜索框** | 按 `⌘⇧Space`（若该快捷键被系统或其他软件占用，则自动改用 `⌘⇧D`） |
+| **呼出 / 聚焦搜索框** | 按 `⌘⇧Space` / Windows `Ctrl+Shift+Space`（若被占用则自动改用 `⌘⇧D` / `Ctrl+Shift+D`） |
 | **开始查词 / 查句** | 输入单词或句子后按 `Enter` 回车 |
 | **切换翻译方向** | 点击搜索框右侧的方向按钮，按 `英→中`、`英→日`、`日→中`、`日→英`、`中→英`、`中→日` 顺序循环 |
 | **收起结果板 / 收成悬浮球** | 按一次 `Esc` 收起下方结果白板；再按一次 `Esc`（或双击左侧放大镜）收成桌面悬浮球 |
@@ -170,8 +175,11 @@ npm install
 # 开发模式启动
 npm start
 
-# 重新打包（会同步更新桌面上的 浮词.app、dist/浮词.app 并生成 dist/*.dmg）
+# 重新打包 macOS（会同步更新桌面上的 浮词.app、dist/浮词.app 并生成 dist/*.dmg）
 npm run pack
+
+# 打包 Windows 64 位免安装版（生成 dist/*-win-x64.zip）
+npm run pack:win
 ```
 
 > **排障提示**：如果执行 `npm install` 或 `npm start` 时提示 Electron 没有安装成功，通常是公司网络证书拦截了 Node 的二进制下载。可改用系统自带的 `curl` 下载对应版本的 `electron-v版本号-darwin-arm64.zip`，解压到 `node_modules/electron/dist`，并让 `node_modules/electron/path.txt` 的内容为 `Electron.app/Contents/MacOS/Electron`。

@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[クイックスタート ↓](#ステップバイステップ導入ガイド)** · **[DMG をダウンロード (v1.3.7) ↓](#ステップ-1ダウンロードとインストール)**
+> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[クイックスタート ↓](#ステップバイステップ導入ガイド)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-win-x64.zip)**
 >
 > **中文** — 查一个词，不该离开正在读的这一页。**[阅读中文说明 →](README.md)**
 >
@@ -8,7 +8,7 @@
 
 論文や技術ドキュメント、Web 記事を読んでいる途中で分からない単語に出会い、ブラウザの別タブや辞書アプリへ切り替えると、戻ったときには元の行を見失ってしまいます。
 
-**浮词（Fuci）** は、macOS のデスクトップ最前面に常駐する軽量なフローティング辞書・翻訳ツールです。普段は小さな検索バーまたは半透明の球（オーブ）として控えめに待機し、`⌘⇧Space` でその場に呼び出して調べ、`Esc` で閉じることができます。視線は常に読んでいるページの上から離れません。
+**浮词（Fuci）** は、**macOS** と **Windows** のデスクトップ最前面に常駐する軽量なフローティング辞書・翻訳ツールです。普段は小さな検索バーまたは半透明の球（オーブ）として控えめに待機し、`⌘⇧Space`（Windows は `Ctrl+Shift+Space`）でその場に呼び出して調べ、`Esc` で閉じることができます。視線は常に読んでいるページの上から離れません。
 
 ![ページを離れずに単語を引く](docs/ja/lookup.gif)
 
@@ -69,10 +69,10 @@
 
 ### ステップ 1：ダウンロードとインストール
 
-> **動作環境**：Apple シリコン（M1 / M2 / M3 / M4、`arm64`）搭載の Mac。
+[GitHub Releases ページ](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.7) からお使いの OS 向けパッケージをダウンロードします：
 
-1. [GitHub Releases ページ](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.7) から最新のインストーラをダウンロードします：
-   - **[fuci-1.3.7-arm64.dmg をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)**
+#### 🍎 macOS（Apple シリコン M1 / M2 / M3 / M4、`arm64`）
+1. **[fuci-1.3.7-arm64.dmg をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)**
 2. ダウンロードした `.dmg` を開き、**「浮词」** を **「アプリケーション（Applications）」** フォルダへドラッグします。
 3. **初回起動時の注意（macOS の未公証アプリの開き方）**：
    ブラウザからダウンロードしたアプリは Apple の公証（Notarization）を受けていないため、初回起動時に `“浮词” Not Opened（“浮词”は開かれませんでした）` と表示されることがあります。その場合は **Done（完了）** を押し（*Move to Trash / ゴミ箱に入れる* は押さないでください）、次のいずれかの方法で開いてください：
@@ -82,6 +82,11 @@
      open /Applications/浮词.app
      ```
    - **方法 B（システム設定から開く）**：Done を押したあと、Mac の「システム設定 → プライバシーとセキュリティ」を開き、下部の「セキュリティ」欄にある **「このまま開く（Open Anyway）」** をクリックします。
+
+#### 🪟 Windows（Windows 10 / 11 64 ビット、`x64` ポータブル版）
+1. **[fuci-1.3.7-win-x64.zip をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-win-x64.zip)**
+2. `.zip` を任意のフォルダへ展開します。
+3. フォルダ内の **`Fuci.exe`** をダブルクリックして起動します（Windows SmartScreen の確認が出た場合は「詳細情報 → 実行」をクリックしてください。下の **AI Studio 軽量モード** と組み合わせると 1 分ですぐ使い始められます）。
 
 ---
 
@@ -143,7 +148,7 @@ Google Cloud のプロジェクト作成や請求設定を行わずに、すぐ�
 
 | 操作 | ショートカット / 操作方法 |
 | :--- | :--- |
-| **検索欄を呼び出す** | `⌘⇧Space`（他のアプリで使われている場合は自動で `⌘⇧D` になります） |
+| **検索欄を呼び出す** | `⌘⇧Space` / Windows は `Ctrl+Shift+Space`（競合時は自動で `⌘⇧D` / `Ctrl+Shift+D`） |
 | **単語・文を引く** | 語句や文を入力して `Enter` |
 | **翻訳方向の切り替え** | 検索欄の方向ボタンを押すたびに `英→中`、`英→日`、`日→中`、`日→英`、`中→英`、`中→日` と順送り |
 | **カードを閉じる / 球にする** | `Esc` を 1 回押すと結果カードを閉じ、もう一度 `Esc`（または左の虫眼鏡をダブルクリック）で小さな球になります |
@@ -164,8 +169,11 @@ npm install
 # 開発モードで起動
 npm start
 
-# アプリの再パッケージ（デスクトップの 浮词.app、dist/浮词.app、dist/*.dmg を更新）
+# macOS アプリの再パッケージ（デスクトップの 浮词.app、dist/浮词.app、dist/*.dmg を更新）
 npm run pack
+
+# Windows 64 ビット ポータブル版の作成（dist/*-win-x64.zip を生成）
+npm run pack:win
 ```
 
 > **Electron のインストールに失敗する場合**：会社のプロキシ証明書などが Node のダウンロードを止めている場合は、システムの `curl` で `electron-vバージョン-darwin-arm64.zip` を取得して `node_modules/electron/dist` に展開し、`node_modules/electron/path.txt` の内容を `Electron.app/Contents/MacOS/Electron` にしてください。

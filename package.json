@@ -8,6 +8,7 @@
   "scripts": {
     "start": "electron .",
     "pack": "bash scripts/build-mac-app.sh",
+    "pack:win": "node scripts/build-win-app.js",
     "test": "node --test test/*.test.js"
   },
   "dependencies": {

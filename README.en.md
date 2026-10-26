@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **English** — One word should not make you leave the page. **[Quick Start ↓](#step-by-step-setup-guide)** · **[Download DMG (v1.3.7) ↓](#step-1-download--install)**
+> **English** — One word should not make you leave the page. **[Quick Start ↓](#step-by-step-setup-guide)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-win-x64.zip)**
 >
 > **中文** — 查一个词，不该离开正在读的这一页。**[阅读中文说明 →](README.md)**
 >
@@ -8,7 +8,7 @@
 
 You are mid-page in an article, paper, or documentation, and one unfamiliar word sends you to a browser tab. By the time you come back, you have lost your line.
 
-**浮词 (Fuci)** is a lightweight, always-on-top floating dictionary and translator for macOS. Most of the time it rests as a compact search bar or a tiny translucent orb on your desktop. Press `⌘⇧Space` to look up a word or sentence right over the page you are reading, and press `Esc` to fold it away without ever losing your place.
+**浮词 (Fuci)** is a lightweight, always-on-top floating dictionary and translator for **macOS** and **Windows**. Most of the time it rests as a compact search bar or a tiny translucent orb on your desktop. Press `⌘⇧Space` (`Ctrl+Shift+Space` on Windows) to look up a word or sentence right over the page you are reading, and press `Esc` to fold it away without ever losing your place.
 
 ![Look up a word without leaving the page](docs/en/lookup.gif)
 
@@ -69,10 +69,10 @@ Inside **Lookup account**, **GCP full mode** and **AI Studio lite mode** sit sid
 
 ### Step 1: Download & Install
 
-> **System Requirement**: A Mac with Apple silicon (M1 / M2 / M3 / M4, `arm64`).
+Download the latest release for your platform from the [GitHub Releases page](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.7):
 
-1. Download the latest installer from the [GitHub Releases page](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.7):
-   - **[Download fuci-1.3.7-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)**
+#### 🍎 macOS (Apple Silicon M1 / M2 / M3 / M4, `arm64`)
+1. **[Download fuci-1.3.7-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)**
 2. Open the downloaded `.dmg` file and drag **浮词** into your **Applications** folder.
 3. **First Launch on macOS (Bypassing the Unnotarized App Prompt)**:
    Because this open-source app is not notarized by Apple, macOS may show a `“浮词” Not Opened` dialog on first launch. Click **Done** (do **not** click *Move to Trash*), then use either method below:
@@ -82,6 +82,11 @@ Inside **Lookup account**, **GCP full mode** and **AI Studio lite mode** sit sid
      open /Applications/浮词.app
      ```
    - **Method B (System Settings)**: After clicking **Done**, open **System Settings → Privacy & Security**, scroll down to the **Security** section, and click **Open Anyway**.
+
+#### 🪟 Windows (Windows 10 / 11 64-bit, `x64` Portable)
+1. **[Download fuci-1.3.7-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-win-x64.zip)**
+2. Extract the `.zip` archive to any folder (e.g. `D:\Apps\Fuci-win32-x64`).
+3. Double-click **`Fuci.exe`** to launch (if Windows SmartScreen prompts, click **More info → Run anyway**; pairing with **AI Studio Lite Mode** below gives an instant zero-dependency setup).
 
 ---
 
@@ -143,7 +148,7 @@ If you have a Google Cloud project and want instant Cloud Translation plus audio
 
 | Action | Shortcut / Gesture |
 | :--- | :--- |
-| **Show / Focus Search Bar** | Press `⌘⇧Space` (automatically falls back to `⌘⇧D` if `⌘⇧Space` is taken) |
+| **Show / Focus Search Bar** | Press `⌘⇧Space` / `Ctrl+Shift+Space` on Windows (falls back to `⌘⇧D` / `Ctrl+Shift+D` if taken) |
 | **Run Lookup** | Type a word or sentence and press `Enter` |
 | **Cycle Translation Direction** | Click the direction pill on the search bar (`EN→ZH` → `EN→JA` → `JA→ZH` → `JA→EN` → `ZH→EN` → `ZH→JA`) |
 | **Close Card / Collapse to Orb** | Press `Esc` once to close the result card; press `Esc` again (or double-click the magnifying glass) to collapse into the orb |
@@ -166,6 +171,9 @@ npm start
 
 # Build macOS app & DMG installer (updates Desktop/浮词.app, dist/浮词.app, and writes dist/*.dmg)
 npm run pack
+
+# Build Windows 64-bit portable archive (writes dist/*-win-x64.zip)
+npm run pack:win
 ```
 
 > **Troubleshooting Electron Install**: If `npm install` or `npm start` reports that Electron failed to install (often caused by corporate SSL proxies blocking Node downloads), use system `curl` to download `electron-v<version>-darwin-arm64.zip`, unzip it into `node_modules/electron/dist`, and write `Electron.app/Contents/MacOS/Electron` into `node_modules/electron/path.txt`.

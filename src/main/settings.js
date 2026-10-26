@@ -51,9 +51,17 @@ function save(userData, patch) {
   return next;
 }
 
+function gcloudConfigDir() {
+  if (process.platform === 'win32' && process.env.APPDATA) {
+    const winDir = path.join(process.env.APPDATA, 'gcloud');
+    if (fs.existsSync(winDir)) return winDir;
+  }
+  return path.join(os.homedir(), '.config', 'gcloud');
+}
+
 function readGcloudProject() {
   try {
-    const root = path.join(os.homedir(), '.config', 'gcloud');
+    const root = gcloudConfigDir();
     const activePath = path.join(root, 'active_config');
     let name = 'default';
     if (fs.existsSync(activePath)) {
@@ -72,7 +80,7 @@ function adcExists() {
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     return fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS);
   }
-  return fs.existsSync(path.join(os.homedir(), '.config', 'gcloud', 'application_default_credentials.json'));
+  return fs.existsSync(path.join(gcloudConfigDir(), 'application_default_credentials.json'));
 }
 
 function effectiveProjectId(settings) {

@@ -27,6 +27,12 @@ function offerFromCompare(data) {
 }
 
 function commandEnv() {
+  if (process.platform === 'win32') {
+    return {
+      ...process.env,
+      GIT_TERMINAL_PROMPT: '0',
+    };
+  }
   const current = process.env.PATH || '';
   return {
     ...process.env,

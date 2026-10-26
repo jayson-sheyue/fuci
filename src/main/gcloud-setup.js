@@ -33,6 +33,23 @@ function pythonBinarySupported(bin) {
 function systemPythonPath() {
   if (systemPythonChecked) return systemPython;
   systemPythonChecked = true;
+  if (process.platform === 'win32') {
+    const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+    const winBins = [];
+    for (const ver of ['314', '313', '312', '311', '310']) {
+      winBins.push(path.join(localAppData, 'Programs', 'Python', `Python${ver}`, 'python.exe'));
+      winBins.push(path.join('C:\\', `Python${ver}`, 'python.exe'));
+    }
+    try {
+      const found = execFileSync('where.exe', ['python.exe'], { encoding: 'utf8', timeout: 3000, windowsHide: true })
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter((s) => s && !s.includes('WindowsApps'));
+      winBins.push(...found);
+    } catch { /* ignore */ }
+    systemPython = winBins.find((bin) => pythonBinarySupported(bin)) || '';
+    return systemPython;
+  }
   const versions = ['3.14', '3.13', '3.12', '3.11', '3.10'];
   const bins = [];
   for (const version of versions) {
@@ -46,15 +63,29 @@ function systemPythonPath() {
 }
 
 function pythonBeside(gcloudBin) {
+  if (process.platform === 'win32') {
+    const bundledWin = path.resolve(path.dirname(gcloudBin), '../platform/bundledpython/python.exe');
+    if (fs.existsSync(bundledWin)) return bundledWin;
+    return path.resolve(path.dirname(gcloudBin), '../platform/fuci-python/python.exe');
+  }
   return path.resolve(path.dirname(gcloudBin), '../platform/fuci-python/bin/python3');
 }
 
 function runtimeRoot(home) {
-  const base = home || path.join(os.homedir(), 'Library', 'Application Support', '浮词');
+  const defaultBase = process.platform === 'win32'
+    ? path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), '浮词')
+    : path.join(os.homedir(), 'Library', 'Application Support', '浮词');
+  const base = home || defaultBase;
   return path.join(base, 'runtime');
 }
 
 function managedPaths(root) {
+  if (process.platform === 'win32') {
+    return {
+      bin: path.join(root, 'google-cloud-sdk', 'bin', 'gcloud.cmd'),
+      python: path.join(root, 'python', 'python.exe'),
+    };
+  }
   return {
     bin: path.join(root, 'google-cloud-sdk', 'bin', 'gcloud'),
     python: path.join(root, 'python', 'bin', 'python3'),
@@ -62,6 +93,19 @@ function managedPaths(root) {
 }
 
 function whichGcloud() {
+  if (process.platform === 'win32') {
+    try {
+      const found = execFileSync('where.exe', ['gcloud.cmd'], {
+        encoding: 'utf8',
+        timeout: 4000,
+        windowsHide: true,
+      }).split(/\r?\n/)[0]?.trim();
+      if (found && fs.existsSync(found)) return found;
+    } catch {
+      return '';
+    }
+    return '';
+  }
   try {
     const found = execFileSync('/bin/zsh', ['-lc', 'command -v gcloud'], {
       encoding: 'utf8',
@@ -76,6 +120,20 @@ function whichGcloud() {
 
 function localBins() {
   const home = os.homedir();
+  if (process.platform === 'win32') {
+    const localAppData = process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local');
+    const pf86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+    const pf = process.env.ProgramFiles || 'C:\\Program Files';
+    return [
+      path.resolve(__dirname, '../../google-cloud-sdk/bin/gcloud.cmd'),
+      process.env.GCLOUD_BIN,
+      path.join(localAppData, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'),
+      path.join(pf86, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'),
+      path.join(pf, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'),
+      path.join(home, 'google-cloud-sdk', 'bin', 'gcloud.cmd'),
+      whichGcloud(),
+    ].filter(Boolean).filter((bin, index, all) => fs.existsSync(bin) && all.indexOf(bin) === index);
+  }
   return [
     path.resolve(__dirname, '../../google-cloud-sdk/bin/gcloud'),
     process.env.GCLOUD_BIN,
@@ -107,13 +165,15 @@ function localEntries(bins) {
 
 function gcloudWorks(bin, python) {
   if (!bin || !python || !fs.existsSync(bin) || !pythonBinarySupported(python)) return false;
+  const isWin = process.platform === 'win32';
   const result = spawnSync(bin, ['--version'], {
     encoding: 'utf8',
     timeout: 30000,
+    ...(isWin ? { shell: true, windowsHide: true } : {}),
     env: {
       ...process.env,
-      PATH: `${path.dirname(bin)}:/usr/bin:/bin`,
-      HOME: process.env.HOME,
+      PATH: isWin ? `${path.dirname(bin)};${process.env.PATH || ''}` : `${path.dirname(bin)}:/usr/bin:/bin`,
+      HOME: process.env.HOME || os.homedir(),
       CLOUDSDK_PYTHON: python,
       CLOUDSDK_ROOT_DIR: path.resolve(path.dirname(bin), '..'),
       CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK: '1',
@@ -207,6 +267,9 @@ async function runInstaller(root, pythonBin) {
 }
 
 async function installManaged(root, onProgress) {
+  if (process.platform === 'win32') {
+    throw new Error(tr('errNoGcloud'));
+  }
   fs.mkdirSync(root, { recursive: true });
   const managed = managedPaths(root);
   let completed = 0;

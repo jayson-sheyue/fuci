@@ -80,10 +80,15 @@ function accessToken(settings) {
 }
 
 function bundledGcloudPath() {
-  return path.resolve(__dirname, '../../google-cloud-sdk/bin/gcloud');
+  return path.resolve(__dirname, '../../google-cloud-sdk/bin', process.platform === 'win32' ? 'gcloud.cmd' : 'gcloud');
 }
 
 function bundledPythonFor(gcloudBin) {
+  if (process.platform === 'win32') {
+    const bundledWin = path.resolve(path.dirname(gcloudBin), '../platform/bundledpython/python.exe');
+    if (fs.existsSync(bundledWin)) return bundledWin;
+    return path.resolve(path.dirname(gcloudBin), '../platform/fuci-python/python.exe');
+  }
   return path.resolve(path.dirname(gcloudBin), '../platform/fuci-python/bin/python3');
 }
 
@@ -132,7 +137,7 @@ function pythonForGcloud(gcloudBin) {
 function launchEnv(bin, { allowPrompt, python } = {}) {
   const env = {
     ...process.env,
-    PATH: `${path.dirname(bin)}:${process.env.PATH || ''}`,
+    PATH: `${path.dirname(bin)}${path.delimiter}${process.env.PATH || ''}`,
     CLOUDSDK_ROOT_DIR: path.resolve(path.dirname(bin), '..'),
     CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK: '1',
     CLOUDSDK_CORE_DISABLE_PROMPTS: allowPrompt ? '0' : '1',
@@ -151,6 +156,19 @@ function launchEnv(bin, { allowPrompt, python } = {}) {
 
 function gcloudCandidates() {
   const home = os.homedir();
+  if (process.platform === 'win32') {
+    const localAppData = process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local');
+    const pf86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+    const pf = process.env.ProgramFiles || 'C:\\Program Files';
+    return [
+      bundledGcloudPath(),
+      process.env.GCLOUD_BIN,
+      path.join(localAppData, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'),
+      path.join(pf86, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'),
+      path.join(pf, 'Google', 'Cloud SDK', 'google-cloud-sdk', 'bin', 'gcloud.cmd'),
+      path.join(home, 'google-cloud-sdk', 'bin', 'gcloud.cmd'),
+    ].filter(Boolean);
+  }
   return [
     bundledGcloudPath(),
     process.env.GCLOUD_BIN,
@@ -189,6 +207,7 @@ async function runGcloud(args, { timeoutMs, allowPrompt, onProgress }) {
     const child = spawn(runtime.bin, args, {
       env: launchEnv(runtime.bin, { allowPrompt, python: runtime.python }),
       stdio: ['ignore', 'pipe', 'pipe'],
+      ...(process.platform === 'win32' ? { shell: true, windowsHide: true } : {}),
     });
     let stdout = '';
     let stderr = '';
