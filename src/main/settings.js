@@ -12,6 +12,7 @@ function normalizeTheme(value) {
 
 const DEFAULTS = {
   projectId: '',
+  geminiApiKey: '',
   keyFile: '',
   oauthClientId: '',
   oauthClientSecret: '',
@@ -76,6 +77,29 @@ function effectiveProjectId(settings) {
   return String(settings.projectId || '').trim() || readGcloudProject();
 }
 
+function geminiApiKey(settings) {
+  return String(settings?.geminiApiKey || '').trim();
+}
+
+function engineMode(settings) {
+  if (String(settings?.projectId || '').trim()) return 'gcp';
+  if (geminiApiKey(settings)) return 'gemini';
+  return 'gcp';
+}
+
+function usesApiKey(settings) {
+  return engineMode(settings) === 'gemini';
+}
+
+function validateGeminiKey(value) {
+  const apiKey = String(value ?? '').trim();
+  if (!apiKey) return '';
+  if (/\s/.test(apiKey) || apiKey.length > 200 || !/^[A-Za-z0-9_-]+$/.test(apiKey)) {
+    throw Object.assign(new Error('BAD_GEMINI_KEY'), { code: 'BAD_GEMINI_KEY' });
+  }
+  return apiKey;
+}
+
 module.exports = {
   DEFAULTS,
   THEME_IDS,
@@ -85,4 +109,8 @@ module.exports = {
   readGcloudProject,
   adcExists,
   effectiveProjectId,
+  geminiApiKey,
+  engineMode,
+  usesApiKey,
+  validateGeminiKey,
 };

@@ -6,6 +6,7 @@ const { accessToken } = require('./oauth');
 const { firstGloss, sanitizeDictionary, sanitizeTokens } = require('./dictionary');
 const { explainGcpError } = require('./errors');
 const lookupCache = require('./lookup-cache');
+const { usesApiKey } = require('./settings');
 const { tr } = require('../renderer/i18n');
 
 const DICTIONARY_SCHEMA = {
@@ -117,17 +118,19 @@ async function getToken(settings) {
   return token;
 }
 
-async function postJson(url, token, projectId, body, signal) {
+async function postJson(url, token, projectId, body, signal, apiKey) {
   throwIfAborted(signal);
+  const headers = { 'Content-Type': 'application/json; charset=utf-8' };
+  if (apiKey) headers['x-goog-api-key'] = apiKey;
+  else {
+    headers.Authorization = `Bearer ${token}`;
+    headers['x-goog-user-project'] = projectId;
+  }
   let response;
   try {
     response = await httpFetch(url, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json; charset=utf-8',
-        'x-goog-user-project': projectId,
-      },
+      headers,
       body: JSON.stringify(body),
       signal,
     });
@@ -210,6 +213,19 @@ function vertexUrl(settings) {
   return `${host}/v1/projects/${settings.projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
 }
 
+function modelUrl(settings) {
+  if (!usesApiKey(settings)) return vertexUrl(settings);
+  const model = encodeURIComponent(settings.model || 'gemini-3.8-flash');
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+}
+
+async function postModel(settings, token, body, signal) {
+  if (usesApiKey(settings)) {
+    return postJson(modelUrl(settings), '', '', body, signal, settings.geminiApiKey);
+  }
+  return postJson(vertexUrl(settings), token, settings.projectId, body, signal);
+}
+
 function dictionaryPrompt(text, lang, settings) {
   const ends = pairEnds(settings);
   const source = lang || ends.source;
@@ -281,13 +297,7 @@ async function defineWord(settings, token, text, lang, signal) {
   let lastError = null;
   for (const attempt of attempts) {
     try {
-      const data = await postJson(
-        vertexUrl(settings),
-        token,
-        settings.projectId,
-        dictionaryBody(text, lang, settings, attempt),
-        signal
-      );
+      const data = await postModel(settings, token, dictionaryBody(text, lang, settings, attempt), signal);
       const rawText = candidateText(data);
       if (!rawText) {
         const reason = data.candidates?.[0]?.finishReason || data.promptFeedback?.blockReason || '空响应';
@@ -337,7 +347,7 @@ async function pronounce(settings, token, text, lang, signal) {
     const generationConfig = { maxOutputTokens: 2048 };
     if (thinking) generationConfig.thinkingConfig = { thinkingLevel: 'LOW' };
     try {
-      const data = await postJson(vertexUrl(settings), token, settings.projectId, {
+      const data = await postModel(settings, token, {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig,
       }, signal);
@@ -403,7 +413,7 @@ async function geminiTranslate(settings, token, text, source, signal) {
     const generationConfig = { maxOutputTokens: 2048 };
     if (thinking) generationConfig.thinkingConfig = { thinkingLevel: 'LOW' };
     try {
-      const data = await postJson(vertexUrl(settings), token, settings.projectId, {
+      const data = await postModel(settings, token, {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig,
       }, signal);
@@ -472,7 +482,7 @@ async function analyzeSentence(settings, token, text, lang, signal) {
     if (attempt.schema) generationConfig.responseSchema = schema;
     if (attempt.thinking) generationConfig.thinkingConfig = { thinkingLevel: 'LOW' };
     try {
-      const data = await postJson(vertexUrl(settings), token, settings.projectId, {
+      const data = await postModel(settings, token, {
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig,
       }, signal);
@@ -492,7 +502,8 @@ async function analyzeSentence(settings, token, text, lang, signal) {
 async function lookup(text, settings, { signal, onProgress } = {}) {
   const original = String(text || '').trim();
   if (!original) return { kind: 'empty' };
-  if (!settings.projectId) {
+  const keyMode = usesApiKey(settings);
+  if (!keyMode && !settings.projectId) {
     return {
       kind: 'setup',
       message: tr('errNoProject'),
@@ -500,13 +511,13 @@ async function lookup(text, settings, { signal, onProgress } = {}) {
   }
 
   const clipped = clip(original, 800);
-  const scoped = { ...settings, pair: normalizePair(settings.pair, settings) };
+  const scoped = { ...settings, pair: normalizePair(settings.pair, settings), engine: keyMode ? 'gemini' : 'gcp' };
   const { source: lang, target: targetLanguage } = pairEnds(scoped);
   const kind = classify(clipped.text, lang);
   const cached = lookupCache.read(scoped, kind, lang, clipped.text);
   if (cached) return { ...cached, query: original, truncated: clipped.truncated, pinned: false };
 
-  const token = await getToken(scoped);
+  const token = keyMode ? '' : await getToken(scoped);
   throwIfAborted(signal);
 
   const base = {
@@ -526,7 +537,12 @@ async function lookup(text, settings, { signal, onProgress } = {}) {
       if (error.name === 'AbortError') throw error;
       return [];
     });
-    const translated = await translateOrFallback(scoped, token, clipped.text, lang, signal);
+    const translated = keyMode
+      ? {
+        translation: await geminiTranslate(scoped, token, clipped.text, lang, signal),
+        translationEngine: 'gemini-key',
+      }
+      : await translateOrFallback(scoped, token, clipped.text, lang, signal);
     const translationReading = canSpeak(targetLanguage)
       ? await pronounce(scoped, token, translated.translation, targetLanguage, signal)
       : '';
@@ -534,55 +550,83 @@ async function lookup(text, settings, { signal, onProgress } = {}) {
     const tokens = await analysis;
     const result = { ...base, kind: 'sentence', ...translated, reading, translationReading, tokens };
     const readingReady = (!canSpeak(lang) || reading) && (!canSpeak(targetLanguage) || translationReading);
-    if (translated.translationEngine === 'cloud-translation' && readingReady && tokens.length) {
-      remember(scoped, kind, lang, clipped.text, result);
-    }
+    const cacheSentence = keyMode
+      ? Boolean(translated.translation && tokens.length && readingReady)
+      : translated.translationEngine === 'cloud-translation' && readingReady && tokens.length;
+    if (cacheSentence) remember(scoped, kind, lang, clipped.text, result);
     return result;
   }
 
-  const translationPromise = translateText(scoped, token, clipped.text, lang, signal)
-    .then((translation) => ({ translation }))
-    .catch((error) => ({ translationError: error }));
-  const dictionaryPromise = defineWord(scoped, token, clipped.text, lang, signal)
-    .then((dictionary) => ({ dictionary }))
-    .catch((error) => ({ dictionaryError: error }));
-
-  const translated = await translationPromise;
-  throwIfAborted(signal);
-  let translation = translated.translation || '';
-  const translationReadingPromise = (canSpeak(targetLanguage) && translation)
-    ? pronounce(scoped, token, translation, targetLanguage, signal)
-    : Promise.resolve('');
-  if (translation) {
-    onProgress?.({
-      ...base,
-      kind: 'word',
-      translation,
-      dictionary: null,
-      dictionaryPending: true,
-    });
-  }
-
-  const defined = await dictionaryPromise;
-  throwIfAborted(signal);
-  const dictionary = defined.dictionary || null;
-  let translationEngine = translated.translation ? 'cloud-translation' : 'gemini';
+  let translation = '';
+  let translationEngine = keyMode ? 'gemini-key' : 'cloud-translation';
   let translationNote = '';
-  if (!translation) {
-    translation = firstGloss(dictionary);
-    if (translated.translationError && !translationDisabled(translated.translationError)) {
-      translationNote = explainGcpError(translated.translationError).message;
-      translationEngine = 'cloud-translation';
+  let dictionary = null;
+  let dictionaryError = null;
+  let cloudTranslation = '';
+  let translationReadingPromise = Promise.resolve('');
+
+  if (keyMode) {
+    try {
+      dictionary = await defineWord(scoped, token, clipped.text, lang, signal);
+    } catch (error) {
+      if (error.name === 'AbortError') throw error;
+      dictionaryError = error;
     }
-  }
-  if (!translation && !dictionary) {
-    throw translated.translationError || defined.dictionaryError || new Error(tr('errNoResult'));
+    throwIfAborted(signal);
+    translation = firstGloss(dictionary);
+    if (!translation && !dictionary) {
+      throw dictionaryError || new Error(tr('errNoResult'));
+    }
+    if (canSpeak(targetLanguage) && translation) {
+      translationReadingPromise = pronounce(scoped, token, translation, targetLanguage, signal);
+    }
+  } else {
+    const translatedPromise = translateText(scoped, token, clipped.text, lang, signal)
+      .then((value) => ({ translation: value }))
+      .catch((error) => ({ translationError: error }));
+    const dictionaryPromise = defineWord(scoped, token, clipped.text, lang, signal)
+      .then((value) => ({ dictionary: value }))
+      .catch((error) => {
+        if (error.name === 'AbortError') throw error;
+        return { dictionaryError: error };
+      });
+    const translated = await translatedPromise;
+    throwIfAborted(signal);
+    translation = translated.translation || '';
+    cloudTranslation = translation;
+    if (canSpeak(targetLanguage) && translation) {
+      translationReadingPromise = pronounce(scoped, token, translation, targetLanguage, signal);
+    }
+    if (translation) {
+      onProgress?.({
+        ...base,
+        kind: 'word',
+        translation,
+        dictionary: null,
+        dictionaryPending: true,
+      });
+    }
+    const defined = await dictionaryPromise;
+    throwIfAborted(signal);
+    dictionary = defined.dictionary || null;
+    dictionaryError = defined.dictionaryError || null;
+    translationEngine = cloudTranslation ? 'cloud-translation' : 'gemini';
+    if (!translation) {
+      translation = firstGloss(dictionary);
+      if (translated.translationError && !translationDisabled(translated.translationError)) {
+        translationNote = explainGcpError(translated.translationError).message;
+        translationEngine = 'cloud-translation';
+      }
+    }
+    if (!translation && !dictionary) {
+      throw translated.translationError || dictionaryError || new Error(tr('errNoResult'));
+    }
   }
 
   await fillReadings(scoped, token, dictionary, lang, targetLanguage, signal);
   let translationReading = await translationReadingPromise;
   const firstSense = dictionary?.entries?.[0]?.senses?.[0];
-  if (!translationReading && firstSense?.glossTargetReading && (!translated.translation || sameReadingText(firstSense.glossZh, translation))) {
+  if (!translationReading && firstSense?.glossTargetReading && (!cloudTranslation || sameReadingText(firstSense.glossZh, translation))) {
     translationReading = firstSense.glossTargetReading;
   }
 
@@ -595,13 +639,17 @@ async function lookup(text, settings, { signal, onProgress } = {}) {
     translationNote,
     dictionary,
     dictionaryPending: false,
-    dictionaryError: defined.dictionaryError ? explainGcpError(defined.dictionaryError).message : '',
+    dictionaryError: dictionaryError ? explainGcpError(dictionaryError).message : '',
   };
-  if (!defined.dictionaryError) remember(scoped, kind, lang, clipped.text, result);
+  if (!dictionaryError) remember(scoped, kind, lang, clipped.text, result);
   return result;
 }
 
 async function testConnection(settings, signal) {
+  if (usesApiKey(settings)) {
+    await geminiTranslate({ ...settings, pair: 'en-zh' }, '', 'hello', 'en', signal);
+    return tr('errKeyReady');
+  }
   if (!settings.projectId) {
     throw Object.assign(new Error(tr('errFillProject')), { status: 0 });
   }
@@ -632,6 +680,7 @@ async function testConnection(settings, signal) {
 module.exports = {
   lookup,
   testConnection,
+  modelUrl,
   clearCache,
   clearAuth,
   configureLookupCache,

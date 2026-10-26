@@ -240,6 +240,9 @@ function tokensHtml(tokens) {
 }
 
 function footerText(result) {
+  if (result?.translationEngine === 'gemini-key') {
+    return result.kind === 'sentence' ? t('footerKeySentence') : t('footerKeyWord');
+  }
   if (result?.translationEngine === 'gemini') {
     return result.kind === 'sentence' ? t('footerGeminiSentence') : t('footerGeminiWord');
   }
@@ -642,19 +645,33 @@ function openSettings(message) {
       <p class="ui-hint">${esc(t('uiHint'))}</p>
     </div>
     <p class="notice">${esc(t('notice'))}</p>
-    <label class="field"><span>${esc(t('projectId'))}</span>
-      <input id="project-id" spellcheck="false" autocapitalize="off" placeholder="my-gcp-project" value="${esc(settings.projectId || '')}" />
-    </label>
-    <label class="field"><span>${esc(t('locationLabel'))}</span>
-      <input id="location" spellcheck="false" value="${esc(settings.location || 'global')}" />
-    </label>
+    <p class="mode-now">${esc(modeNow(settings))}</p>
+    <div class="setup-block">
+      <p class="mode-title">${esc(t('modeGcpTitle'))}</p>
+      <label class="field"><span>${esc(t('projectId'))}</span>
+        <input id="project-id" spellcheck="false" autocapitalize="off" placeholder="my-gcp-project" value="${esc(settings.projectId || '')}" />
+      </label>
+      <label class="field"><span>${esc(t('locationLabel'))}</span>
+        <input id="location" spellcheck="false" value="${esc(settings.location || 'global')}" />
+      </label>
+      <div class="auth-row">
+        <button type="button" class="primary" id="connect-google">${esc(t('connect'))}</button>
+        <span id="token-clock" class="token-clock">${esc(t('signedOut'))}</span>
+      </div>
+    </div>
+    <div class="setup-block">
+      <p class="mode-title">${esc(t('modeKeyTitle'))}</p>
+      <label class="field"><span>${esc(t('geminiKey'))}</span>
+        <input id="gemini-api-key" type="password" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="AIza..." value="${esc(settings.geminiApiKey || '')}" />
+      </label>
+      <p class="ui-hint">${esc(t('geminiKeyHint'))}</p>
+      <div class="auth-row">
+        <button type="button" class="ghost" id="check-key">${esc(t('checkKey'))}</button>
+      </div>
+    </div>
     <label class="field"><span>${esc(t('modelId'))}</span>
       <input id="model" spellcheck="false" value="${esc(settings.model || 'gemini-3.8-flash')}" />
     </label>
-    <div class="auth-row">
-      <button type="button" class="primary" id="connect-google">${esc(t('connect'))}</button>
-      <span id="token-clock" class="token-clock">${esc(t('signedOut'))}</span>
-    </div>
     <label class="field"><span>${esc(t('opacity'))} <b id="opacity-readout">${opacity}%</b></span>
       <input id="panel-opacity" type="range" min="40" max="100" step="1" value="${opacity}" />
     </label>
@@ -782,10 +799,42 @@ function openSettings(message) {
     else if (state.result && (state.result.kind === 'word' || state.result.kind === 'sentence')) renderResult(state.result);
     else showIdle();
   };
+  document.getElementById('check-key').onclick = async () => {
+    const button = document.getElementById('check-key');
+    const status = document.getElementById('settings-status');
+    const form = readSettingsForm();
+    if (form.projectId) {
+      status.className = 'status';
+      status.textContent = t('modeGcpNow');
+      reportHeight();
+      return;
+    }
+    if (!form.geminiApiKey) {
+      status.className = 'status bad';
+      status.textContent = t('errFillKey');
+      reportHeight();
+      return;
+    }
+    button.disabled = true;
+    status.className = 'status';
+    status.textContent = t('checkKey');
+    const checked = await window.fuci.testSettings(form);
+    button.disabled = false;
+    if (checked.settings) state.bootstrap.settings = checked.settings;
+    status.className = checked.ok ? 'status ok' : 'status bad';
+    status.textContent = checked.ok ? (checked.message || t('errKeyReady')) : (checked.message || t('errBadKey'));
+    reportHeight();
+  };
   document.getElementById('connect-google').onclick = async () => {
     const button = document.getElementById('connect-google');
     const status = document.getElementById('settings-status');
     const form = readSettingsForm();
+    if (!form.projectId && form.geminiApiKey) {
+      status.className = 'status';
+      status.textContent = t('keyNoConnect');
+      reportHeight();
+      return;
+    }
     button.disabled = true;
     status.className = 'status';
     status.textContent = t('connecting');
@@ -859,9 +908,17 @@ function applyTheme(value) {
   if (state.bootstrap?.settings) state.bootstrap.settings.theme = id;
 }
 
+function modeNow(settings) {
+  if (String(settings?.projectId || '').trim()) return t('modeGcpNow');
+  if (String(settings?.geminiApiKey || '').trim()) return t('modeKeyNow');
+  if (state.bootstrap?.gcloudProject) return t('modeGcpNow');
+  return t('modeNoneNow');
+}
+
 function readSettingsForm() {
   return {
     projectId: fieldValue('project-id').trim(),
+    geminiApiKey: fieldValue('gemini-api-key').trim(),
     target: fieldValue('target'),
     model: fieldValue('model').trim(),
     location: fieldValue('location').trim(),
@@ -1482,6 +1539,8 @@ function applyShot() {
     openSettings();
     document.querySelector('.locales')?.closest('.field')?.remove();
     document.querySelector('.notice')?.remove();
+    document.querySelector('.mode-now')?.remove();
+    document.querySelectorAll('.setup-block').forEach((node) => node.remove());
     for (const id of ['project-id', 'location', 'model']) {
       document.getElementById(id)?.closest('.field')?.remove();
     }
@@ -1511,7 +1570,9 @@ window.fuci.bootstrap().then((boot) => {
   hint.textContent = boot.shortcutLabel || '';
   hint.hidden = !boot.shortcutLabel;
   if (boot.maxBoardHeight) boardBody.style.maxHeight = `${boot.maxBoardHeight}px`;
-  if (!boot.auth?.signedIn) {
+  const keyOnly = boot.settings?.engine === 'gemini' || (!String(boot.settings?.projectId || '').trim() && String(boot.settings?.geminiApiKey || '').trim());
+  if (keyOnly) reportHeight();
+  else if (!boot.auth?.signedIn) {
     openSettings(boot.auth?.expired ? t('setupExpired') : t('setupFresh'));
   } else reportHeight();
   applyShot();

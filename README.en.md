@@ -50,25 +50,27 @@ There are seven themes: Sky, Bamboo, Cinnabar, Wisteria, Amber, Crabapple, and N
 
 ## Before you start
 
-Lookups use your own GCP project. This repository has no project ID, account, or key.
+Lookups can use either path, and Settings keeps both. This repository has no project ID, account, or key.
 
 - A Mac with Apple silicon (arm64).
-- A Google Cloud project with billing enabled.
-- Enable these APIs on that project:
-  - **Cloud Translation API** for the translation. Sentences use it first.
-  - **Vertex AI API** for the dictionary entry, pronunciation, and examples. The default model is `gemini-3.8-flash` in `global`.
-  - **Cloud Text-to-Speech API** only for the speaker button. Lookups work without it.
-- Add the Google account you will sign in with to that project, and grant:
-  - **Cloud Translation API User** (`roles/cloudtranslate.user`)
-  - **Vertex AI User** (`roles/aiplatform.user`)
+- **AI Studio lite mode**: create an API key in [Google AI Studio](https://aistudio.google.com/apikey) and paste it into Settings. No GCP project and no gcloud. The translation, the entry, and the word glosses all come from Gemini. Speech is not on this path.
+- **GCP full mode**: a project ID selects this path, even when a key is also filled in. It also needs:
+  - A Google Cloud project with billing enabled.
+  - These APIs enabled on that project:
+    - **Cloud Translation API** for the translation. Sentences use it first.
+    - **Vertex AI API** for the dictionary entry, pronunciation, and examples. The default model is `gemini-3.8-flash` in `global`.
+    - **Cloud Text-to-Speech API** only for the speaker button. Lookups work without it.
+  - The Google account you sign in with, granted:
+    - **Cloud Translation API User** (`roles/cloudtranslate.user`)
+    - **Vertex AI User** (`roles/aiplatform.user`)
 
 The installer contains the window. The first time you choose Connect, if this Mac does not already have a working gcloud, the sign-in component is downloaded once, about 80MB. Enter the project ID in settings and choose Connect. The account, token, and lookup cache stay on this Mac.
 
 ## Download
 
-Download the package from the [release](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.4). Open it and drag 浮词 into Applications. The package is for Apple silicon (arm64).
+Download the package from the [release](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.5). Open it and drag 浮词 into Applications. The package is for Apple silicon (arm64).
 
-- [1.3.4](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.4/fuci-1.3.4-arm64.dmg)
+- [1.3.5](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.5/fuci-1.3.5-arm64.dmg)
 
 The downloaded app is not notarized. If macOS says “浮词” Not Opened, click **Done**, not Move to Trash. Then run:
 

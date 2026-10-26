@@ -14,7 +14,7 @@ const { alignSession, beginLogin, configureSession, sessionStatus } = require('.
 const { setFetchImplementation } = require('./http');
 const { orbHit } = require('./orb-hit');
 const { normalizeLocale, setLocale, tr } = require('../renderer/i18n');
-const { adcExists, effectiveProjectId, load, normalizeTheme, readGcloudProject, save } = require('./settings');
+const { adcExists, effectiveProjectId, engineMode, load, normalizeTheme, readGcloudProject, save, validateGeminiKey } = require('./settings');
 
 setFetchImplementation((url, options = {}) => net.fetch(url, {
   method: options.method,
@@ -209,10 +209,12 @@ function buildTray() {
   tray.setToolTip('浮词');
   const refresh = () => {
     const settings = load(app.getPath('userData'));
-    const project = effectiveProjectId(settings) || tr('trayUnset');
+    const projectLabel = engineMode(settings) === 'gemini'
+      ? tr('trayKeyMode')
+      : tr('trayProject', { project: effectiveProjectId(settings) || tr('trayUnset') });
     tray.setContextMenu(Menu.buildFromTemplate([
       { label: tr('trayShow'), click: showWindow },
-      { label: tr('trayProject', { project }), enabled: false },
+      { label: projectLabel, enabled: false },
       { type: 'separator' },
       {
         label: tr('trayLogin'),
@@ -250,7 +252,13 @@ function refreshLocaleChrome() {
 
 function currentSettings() {
   const stored = load(app.getPath('userData'));
-  return { ...stored, projectId: effectiveProjectId(stored) };
+  const engine = engineMode(stored);
+  return {
+    ...stored,
+    engine,
+    geminiApiKey: String(stored.geminiApiKey || '').trim(),
+    projectId: engine === 'gemini' ? '' : effectiveProjectId(stored),
+  };
 }
 
 function normalizeForm(input) {
@@ -262,10 +270,16 @@ function normalizeForm(input) {
   const panelOpacity = clampPanelOpacity(input?.panelOpacity);
   const theme = normalizeTheme(input?.theme);
   const uiLocale = normalizeLocale(input?.uiLocale);
+  let geminiApiKey = '';
+  try {
+    geminiApiKey = validateGeminiKey(input?.geminiApiKey);
+  } catch {
+    throw new Error(tr('errBadKeyFormat'));
+  }
   if (/\s/.test(projectId)) throw new Error(tr('errProjectSpace'));
   if (!/^[a-z0-9-]{1,40}$/i.test(location)) throw new Error(tr('errLocation'));
   if (!/^[a-zA-Z0-9._-]{1,80}$/.test(model)) throw new Error(tr('errModel'));
-  return { projectId, location, model, oauthClientId: '', oauthClientSecret: '', target, openAtLogin, panelOpacity, theme, uiLocale };
+  return { projectId, geminiApiKey, location, model, oauthClientId: '', oauthClientSecret: '', target, openAtLogin, panelOpacity, theme, uiLocale };
 }
 
 function clampPanelOpacity(value) {
@@ -287,6 +301,8 @@ function clientVersion() {
 function publicSettings(settings) {
   return {
     projectId: settings.projectId || '',
+    geminiApiKey: String(settings.geminiApiKey || '').trim(),
+    engine: engineMode(settings),
     location: settings.location || 'global',
     model: settings.model || 'gemini-3.8-flash',
     target: settings.target === 'zh-TW' ? 'zh-TW' : 'zh-CN',
@@ -364,7 +380,7 @@ function registerIpc() {
       clearAuth();
       refreshLocaleChrome();
       const message = await testConnection(currentSettings(), controller.signal);
-      return { ok: true, message };
+      return { ok: true, message, settings: publicSettings(next) };
     } catch (error) {
       if (error.name === 'AbortError') {
         return { ok: false, message: tr('errTestTimeout'), detail: '' };
@@ -376,6 +392,7 @@ function registerIpc() {
         message: prefix ? `${prefix}${explained.message}` : explained.message,
         detail: explained.detail,
         needsSetup: explained.needsSetup,
+        settings: publicSettings(load(app.getPath('userData'))),
       };
     } finally {
       clearTimeout(timer);

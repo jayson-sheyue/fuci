@@ -54,25 +54,27 @@
 
 ## 使用前需要
 
-查词要连你自己的 GCP 项目。仓库里没有项目 ID、账号或密钥。
+查词有两条路，设置里可以并存。仓库里没有项目 ID、账号或密钥。
 
 - 一台 Apple 芯片（arm64）的 Mac。
-- 一个已开通结算的 Google Cloud 项目。
-- 在这个项目里启用：
-  - **Cloud Translation API**：译文。句子也优先走这里。
-  - **Vertex AI API**：词条、读音和例句。默认模型 `gemini-3.8-flash`，区域 `global`。
-  - **Cloud Text-to-Speech API**：只有点喇叭朗读时才用。不启用也不影响查词。
-- 把用来登录的 Google 账号加到这个项目，授予：
-  - **Cloud Translation API User**（`roles/cloudtranslate.user`）
-  - **Vertex AI User**（`roles/aiplatform.user`）
+- **AI Studio 轻量模式**：在 [Google AI Studio](https://aistudio.google.com/apikey) 创建一个 API Key，填进设置即可。不用 GCP 项目，也不用 gcloud。译文、词条和逐词都走 Gemini。朗读不在这条路上。
+- **GCP 满血模式**：填了项目 ID 就走这条，即使同时也填了 Key。还需要：
+  - 一个已开通结算的 Google Cloud 项目。
+  - 在这个项目里启用：
+    - **Cloud Translation API**：译文。句子也优先走这里。
+    - **Vertex AI API**：词条、读音和例句。默认模型 `gemini-3.8-flash`，区域 `global`。
+    - **Cloud Text-to-Speech API**：只有点喇叭朗读时才用。不启用也不影响查词。
+  - 把用来登录的 Google 账号加到这个项目，授予：
+    - **Cloud Translation API User**（`roles/cloudtranslate.user`）
+    - **Vertex AI User**（`roles/aiplatform.user`）
 
 安装包只带窗口。第一次点「一键链接」时，如果这台 Mac 上还没有能用的 gcloud，会把登录组件下载到本机，大约 80MB，只此一次。设置里填项目 ID，点「一键链接」即可登录。账号、令牌和查词缓存只留在本机。
 
 ## 下载
 
-在 [发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.4) 下载安装包。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
+在 [发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.5) 下载安装包。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
 
-- [1.3.4](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.4/fuci-1.3.4-arm64.dmg)
+- [1.3.5](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.5/fuci-1.3.5-arm64.dmg)
 
 从浏览器下载的安装包没有苹果公证。第一次打开如果弹出「“浮词” Not Opened」，点 **Done**，不要点 Move to Trash。然后在终端执行：
 

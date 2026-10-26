@@ -742,6 +742,14 @@ rt {
 }
 
 .notice { margin-top: 0; color: var(--ink); font-size: 15px; }
+.mode-now { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.mode-title { margin: 14px 0 0; font-size: 13px; font-weight: 650; }
+.setup-block {
+  margin-top: 8px;
+  padding: 2px 12px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: 16px;
+}
 
 .detail {
   margin-top: 6px;

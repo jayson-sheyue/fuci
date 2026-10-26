@@ -2,6 +2,7 @@
 
 const { httpFetch } = require('./http');
 const { accessToken } = require('./oauth');
+const { usesApiKey } = require('./settings');
 const { tr } = require('../renderer/i18n');
 
 const TTS_MODELS = ['gemini-3.1-flash-tts-preview', 'gemini-2.5-pro-tts'];
@@ -57,6 +58,9 @@ async function synthesize(text, lang, settings, signal) {
   const value = String(text || '').trim().slice(0, 800);
   if (!value || (lang !== 'en' && lang !== 'ja')) {
     throw Object.assign(new Error(tr('errSpeechLang')), { status: 0 });
+  }
+  if (usesApiKey(settings)) {
+    throw Object.assign(new Error(tr('errSpeechNeedsGcp')), { status: 0 });
   }
   if (!settings?.projectId) {
     throw Object.assign(new Error(tr('errNoProjectShort')), { status: 0 });

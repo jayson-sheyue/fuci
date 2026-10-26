@@ -18,6 +18,7 @@ function scopeParts(settings) {
     settings.target || '',
     settings.model || '',
     settings.location || '',
+    settings.engine || 'gcp',
   ];
 }
 

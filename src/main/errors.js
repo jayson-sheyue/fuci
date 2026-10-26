@@ -14,6 +14,12 @@ function explainGcpError(error) {
   } else if (/billing/i.test(raw)) {
     message = tr('errBilling');
     needsSetup = true;
+  } else if (/API key not valid|API_KEY_INVALID|API_KEY_SERVICE_BLOCKED/i.test(raw)) {
+    message = tr('errBadKey');
+    needsSetup = true;
+  } else if (/generativelanguage\.googleapis\.com/i.test(raw)) {
+    message = tr('errGeminiDisabled');
+    needsSetup = true;
   } else if (status === 401 || /unauthenticated|invalid authentication|invalid_grant|invalid_rapt/i.test(raw)) {
     message = tr('errToken');
     needsSetup = true;

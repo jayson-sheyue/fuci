@@ -50,25 +50,27 @@
 
 ## 使う前に
 
-検索には自分の GCP プロジェクトが必要です。このリポジトリにプロジェクト ID、アカウント、鍵は入っていません。
+検索は二つの方法から選べ、設定には両方を並べておけます。このリポジトリにプロジェクト ID、アカウント、鍵は入っていません。
 
 - Apple シリコン（arm64）の Mac。
-- 請求が有効な Google Cloud プロジェクト。
-- そのプロジェクトで有効にする API：
-  - **Cloud Translation API**：訳文。文もまずここを使います。
-  - **Vertex AI API**：語釈、読み、例文。既定のモデルは `gemini-3.8-flash`、リージョンは `global` です。
-  - **Cloud Text-to-Speech API**：スピーカーボタンだけで使います。無効でも検索はできます。
-- ログインする Google アカウントをこのプロジェクトに追加し、次のロールを付けます。
-  - **Cloud Translation API User**（`roles/cloudtranslate.user`）
-  - **Vertex AI User**（`roles/aiplatform.user`）
+- **AI Studio 軽量モード**：[Google AI Studio](https://aistudio.google.com/apikey) で API Key を作り、設定に貼ります。GCP プロジェクトも gcloud も要りません。訳文、語釈、単語ごとは Gemini です。読み上げはこの方法にはありません。
+- **GCP フルモード**：プロジェクト ID を入れるとこちらです。Key も入っていても同じです。さらに必要です：
+  - 請求が有効な Google Cloud プロジェクト。
+  - そのプロジェクトで有効にする API：
+    - **Cloud Translation API**：訳文。文もまずここを使います。
+    - **Vertex AI API**：語釈、読み、例文。既定のモデルは `gemini-3.8-flash`、リージョンは `global` です。
+    - **Cloud Text-to-Speech API**：スピーカーボタンだけで使います。無効でも検索はできます。
+  - ログインする Google アカウントをこのプロジェクトに追加し、次のロールを付けます。
+    - **Cloud Translation API User**（`roles/cloudtranslate.user`）
+    - **Vertex AI User**（`roles/aiplatform.user`）
 
 インストールパッケージにはウィンドウだけが入っています。最初の「ワンクリックで接続」で、この Mac に使える gcloud がなければ、ログイン部品を約 80MB、一度だけダウンロードします。設定にプロジェクト ID を入れ、「ワンクリックで接続」を押します。アカウント、トークン、検索キャッシュはこの Mac だけに残ります。
 
 ## ダウンロード
 
-[リリース](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.4) からインストールパッケージを落とします。開いて「浮词」を「アプリケーション」にドラッグします。Apple シリコン（arm64）用です。
+[リリース](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.5) からインストールパッケージを落とします。開いて「浮词」を「アプリケーション」にドラッグします。Apple シリコン（arm64）用です。
 
-- [1.3.4](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.4/fuci-1.3.4-arm64.dmg)
+- [1.3.5](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.5/fuci-1.3.5-arm64.dmg)
 
 ダウンロードしたアプリは Apple の公証を受けていません。最初に「“浮词” Not Opened」と出たら、**Done**（完了）を押し、Move to Trash（ゴミ箱に入れる）は押さないでください。そのあとターミナルで実行します。
 
