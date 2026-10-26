@@ -82,6 +82,71 @@ function bundledGcloudPath() {
   return path.resolve(__dirname, '../../google-cloud-sdk/bin/gcloud');
 }
 
+function bundledPythonFor(gcloudBin) {
+  return path.resolve(path.dirname(gcloudBin), '../platform/fuci-python/bin/python3');
+}
+
+function pythonReleaseSupported(major, minor) {
+  return major === 3 && minor >= 10 && minor <= 15;
+}
+
+function pythonBinarySupported(bin) {
+  try {
+    execFileSync(bin, ['-c', 'import sys; raise SystemExit(0 if (3, 10) <= sys.version_info[:2] <= (3, 15) else 1)'], {
+      timeout: 3000,
+      stdio: 'ignore',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function pythonCandidates() {
+  const versions = ['3.14', '3.13', '3.12', '3.11', '3.10'];
+  const bins = [];
+  if (process.env.CLOUDSDK_PYTHON) bins.push(process.env.CLOUDSDK_PYTHON);
+  for (const version of versions) {
+    bins.push(`/opt/homebrew/bin/python${version}`);
+    bins.push(`/usr/local/bin/python${version}`);
+    bins.push(`/Library/Frameworks/Python.framework/Versions/${version}/bin/python3`);
+  }
+  bins.push('/opt/homebrew/bin/python3', '/usr/local/bin/python3', '/usr/bin/python3');
+  return bins;
+}
+
+let fallbackPython = '';
+let fallbackPythonChecked = false;
+
+function pythonForGcloud(gcloudBin) {
+  const shipped = bundledPythonFor(gcloudBin);
+  if (fs.existsSync(shipped)) return shipped;
+  if (!fallbackPythonChecked) {
+    fallbackPythonChecked = true;
+    fallbackPython = pythonCandidates().find((bin) => fs.existsSync(bin) && pythonBinarySupported(bin)) || '';
+  }
+  return fallbackPython;
+}
+
+function launchEnv(bin, { allowPrompt }) {
+  const env = {
+    ...process.env,
+    PATH: `${path.dirname(bin)}:${process.env.PATH || ''}`,
+    CLOUDSDK_ROOT_DIR: path.resolve(path.dirname(bin), '..'),
+    CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK: '1',
+    CLOUDSDK_CORE_DISABLE_PROMPTS: allowPrompt ? '0' : '1',
+  };
+  const python = pythonForGcloud(bin);
+  if (!python) return env;
+  env.CLOUDSDK_PYTHON = python;
+  if (python === bundledPythonFor(bin)) {
+    env.PYTHONDONTWRITEBYTECODE = '1';
+    delete env.PYTHONPATH;
+    delete env.PYTHONHOME;
+  }
+  return env;
+}
+
 function gcloudCandidates() {
   const home = os.homedir();
   return [
@@ -114,13 +179,7 @@ function findGcloud() {
 function runGcloud(bin, args, { timeoutMs, allowPrompt }) {
   return new Promise((resolve) => {
     const child = spawn(bin, args, {
-      env: {
-        ...process.env,
-        PATH: `${path.dirname(bin)}:${process.env.PATH || ''}`,
-        CLOUDSDK_ROOT_DIR: path.resolve(path.dirname(bin), '..'),
-        CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK: '1',
-        CLOUDSDK_CORE_DISABLE_PROMPTS: allowPrompt ? '0' : '1',
-      },
+      env: launchEnv(bin, { allowPrompt }),
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let stdout = '';
@@ -216,7 +275,10 @@ module.exports = {
   alignSession,
   beginLogin,
   bundledGcloudPath,
+  bundledPythonFor,
   configureSession,
   gcloudCandidates,
+  launchEnv,
+  pythonReleaseSupported,
   sessionStatus,
 };

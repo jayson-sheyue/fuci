@@ -62,13 +62,14 @@ Lookups use your own GCP project. This repository has no project ID, account, or
   - **Cloud Translation API User** (`roles/cloudtranslate.user`)
   - **Vertex AI User** (`roles/aiplatform.user`)
 
-The installer includes gcloud. Enter the project ID in settings and choose Connect. The account, token, and lookup cache stay on this Mac.
+The installer includes gcloud and the Python it runs with. Enter the project ID in settings and choose Connect. The account, token, and lookup cache stay on this Mac.
 
 ## Download
 
 Download a package from [all releases](https://github.com/jayson-sheyue/fuci/releases). Open it and drag 浮词 into Applications. The package is for Apple silicon (arm64).
 
-- [1.3.0 (current)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
+- [1.3.1 (current)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.1/fuci-1.3.1-arm64.dmg)
+- [1.3.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
 - [1.2.2](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.2/fuci-1.2.2-arm64.dmg)
 - [1.2.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.1/fuci-1.2.1-arm64.dmg)
 - [1.2.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.0/fuci-1.2.0-arm64.dmg)
@@ -102,7 +103,7 @@ The current version is shown at the right of the settings title. The same page s
 
 ## Connect to GCP
 
-The repository does not contain a project ID, access token, or Google account. Those stay on this Mac. The DMG includes the Google Cloud CLI, so Connect works without installing gcloud yourself. Enter the project ID, location, and model ID. Connect runs `gcloud auth print-access-token` and gets a token that lasts about an hour. If you are signed out, the browser opens for `gcloud auth login`. When the countdown ends or the token is expired, connect again. Panel opacity changes the search bar and the card together, starting at 88%, and applies as you drag. Chinese script chooses simplified or traditional for any direction that includes Chinese. The current lookup runs again after you change it.
+The repository does not contain a project ID, access token, or Google account. Those stay on this Mac. The DMG includes the Google Cloud CLI and the Python it runs with, so Connect works without installing gcloud yourself. Enter the project ID, location, and model ID. Connect runs `gcloud auth print-access-token` and gets a token that lasts about an hour. If you are signed out, the browser opens for `gcloud auth login`. When the countdown ends or the token is expired, connect again. Panel opacity changes the search bar and the card together, starting at 88%, and applies as you drag. Chinese script chooses simplified or traditional for any direction that includes Chinese. The current lookup runs again after you change it.
 
 Which APIs to enable, and which roles to grant, are listed in Before you start.
 

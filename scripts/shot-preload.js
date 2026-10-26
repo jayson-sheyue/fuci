@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld('fuci', {
     },
     auth: { signedIn: true, expired: false, expiresAt: Date.now() + 46 * 60 * 1000 },
     shortcutLabel: '⌘⇧Space',
-    version: '1.3.0',
+    version: '1.3.1',
     update: { available: false },
     maxBoardHeight: 640,
   }),

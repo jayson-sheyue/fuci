@@ -66,13 +66,14 @@
   - **Cloud Translation API User**（`roles/cloudtranslate.user`）
   - **Vertex AI User**（`roles/aiplatform.user`）
 
-安装包里带有 gcloud。设置里填项目 ID，点「一键链接」即可登录。账号、令牌和查词缓存只留在本机。
+安装包里带有 gcloud 和它运行所需的 Python。设置里填项目 ID，点「一键链接」即可登录。账号、令牌和查词缓存只留在本机。
 
 ## 下载
 
 在 [全部版本](https://github.com/jayson-sheyue/fuci/releases) 里下载安装包。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
 
-- [1.3.0（当前）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
+- [1.3.1（当前）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.1/fuci-1.3.1-arm64.dmg)
+- [1.3.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
 - [1.2.2](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.2/fuci-1.2.2-arm64.dmg)
 - [1.2.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.1/fuci-1.2.1-arm64.dmg)
 - [1.2.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.0/fuci-1.2.0-arm64.dmg)
@@ -106,7 +107,7 @@ npm run pack
 
 ## 连接 GCP
 
-仓库里没有项目 ID、访问令牌或 Google 账号，这些只保存在本机。DMG 里带有 Google Cloud CLI，装好就能点「一键链接」，不用先在电脑上安装 gcloud。设置里填写项目 ID、Location 和模型 ID。点「一键链接」后，应用执行 `gcloud auth print-access-token` 取得大约 1 小时的访问令牌。如果还没登录，会自动打开浏览器完成 `gcloud auth login`。右侧倒计时结束或显示已失效时，再点一次一键链接。同一页的「面板不透明度」拉杆会同时调整搜索框和结果板，默认 88%，拖动后立即生效。「中文用字」决定方向里的中文是简体还是繁体。改完后，当前查询会按新写法重查。
+仓库里没有项目 ID、访问令牌或 Google 账号，这些只保存在本机。DMG 里带有 Google Cloud CLI 和它运行所需的 Python，装好就能点「一键链接」，不用先在电脑上安装 gcloud。设置里填写项目 ID、Location 和模型 ID。点「一键链接」后，应用执行 `gcloud auth print-access-token` 取得大约 1 小时的访问令牌。如果还没登录，会自动打开浏览器完成 `gcloud auth login`。右侧倒计时结束或显示已失效时，再点一次一键链接。同一页的「面板不透明度」拉杆会同时调整搜索框和结果板，默认 88%，拖动后立即生效。「中文用字」决定方向里的中文是简体还是繁体。改完后，当前查询会按新写法重查。
 
 要开哪些 API、给账号什么权限，见上面的「使用前需要」。
 

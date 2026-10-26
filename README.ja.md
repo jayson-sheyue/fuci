@@ -62,13 +62,14 @@
   - **Cloud Translation API User**（`roles/cloudtranslate.user`）
   - **Vertex AI User**（`roles/aiplatform.user`）
 
-インストールパッケージには gcloud が入っています。設定にプロジェクト ID を入れ、「ワンクリックで接続」を押します。アカウント、トークン、検索キャッシュはこの Mac だけに残ります。
+インストールパッケージには gcloud と、それを動かす Python が入っています。設定にプロジェクト ID を入れ、「ワンクリックで接続」を押します。アカウント、トークン、検索キャッシュはこの Mac だけに残ります。
 
 ## ダウンロード
 
 [すべてのバージョン](https://github.com/jayson-sheyue/fuci/releases) からインストールパッケージを落とします。開いて「浮词」を「アプリケーション」にドラッグします。Apple シリコン（arm64）用です。
 
-- [1.3.0（最新）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
+- [1.3.1（最新）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.1/fuci-1.3.1-arm64.dmg)
+- [1.3.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
 - [1.2.2](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.2/fuci-1.2.2-arm64.dmg)
 - [1.2.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.1/fuci-1.2.1-arm64.dmg)
 - [1.2.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.0/fuci-1.2.0-arm64.dmg)
@@ -102,7 +103,7 @@ npm run pack
 
 ## GCP につなぐ
 
-リポジトリにプロジェクト ID、アクセストークン、Google アカウントは入っていません。これらはこの Mac だけに保存されます。DMG には Google Cloud CLI が入っているので、別に gcloud を入れなくても「ワンクリックで接続」を押せます。プロジェクト ID、Location、モデル ID を入力します。「ワンクリックで接続」は `gcloud auth print-access-token` を実行し、約 1 時間のトークンを取ります。未ログインならブラウザが開き、`gcloud auth login` になります。右のカウントが終わるか、期限切れと出たら、もう一度接続します。「パネルの不透明度」は検索欄と結果を同時に変え、初期値は 88% で、ドラッグした直後に反映されます。「中国語の表記」は、中国語を含む方向を簡体字にするか繁体字にするかを決めます。変えたあと、いまの検索は新しい表記で引き直します。
+リポジトリにプロジェクト ID、アクセストークン、Google アカウントは入っていません。これらはこの Mac だけに保存されます。DMG には Google Cloud CLI と、それを動かす Python が入っているので、別に gcloud を入れなくても「ワンクリックで接続」を押せます。プロジェクト ID、Location、モデル ID を入力します。「ワンクリックで接続」は `gcloud auth print-access-token` を実行し、約 1 時間のトークンを取ります。未ログインならブラウザが開き、`gcloud auth login` になります。右のカウントが終わるか、期限切れと出たら、もう一度接続します。「パネルの不透明度」は検索欄と結果を同時に変え、初期値は 88% で、ドラッグした直後に反映されます。「中国語の表記」は、中国語を含む方向を簡体字にするか繁体字にするかを決めます。変えたあと、いまの検索は新しい表記で引き直します。
 
 有効にする API と付与するロールは、上の「使う前に」にまとめてあります。
 
