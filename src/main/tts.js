@@ -8,6 +8,15 @@ const { tr } = require('../renderer/i18n');
 const TTS_MODELS = ['gemini-3.1-flash-tts-preview', 'gemini-2.5-pro-tts'];
 const cache = new Map();
 
+function speechModels(settings) {
+  const chosen = String(settings?.ttsModel || '').trim() || TTS_MODELS[0];
+  const models = [chosen];
+  for (const model of TTS_MODELS) {
+    if (!models.includes(model)) models.push(model);
+  }
+  return models;
+}
+
 function speechRequest(text, lang, model = TTS_MODELS[0]) {
   const japanese = lang === 'ja';
   return {
@@ -71,11 +80,12 @@ async function synthesize(text, lang, settings, signal) {
     error.status = 401;
     throw error;
   }
-  const key = `${lang}\n${value}`;
+  const models = speechModels(settings);
+  const key = `${models[0]}\n${lang}\n${value}`;
   if (cache.has(key)) return cache.get(key);
 
   let lastError = null;
-  for (const model of TTS_MODELS) {
+  for (const model of models) {
     try {
       const audio = await synthesizeOnce(settings, token, value, lang, model, signal);
       cache.set(key, audio);
@@ -92,6 +102,7 @@ async function synthesize(text, lang, settings, signal) {
 
 module.exports = {
   TTS_MODELS,
+  speechModels,
   speechRequest,
   unsupportedModel,
   synthesize,

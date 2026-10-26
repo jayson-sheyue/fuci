@@ -18,6 +18,7 @@ const DEFAULTS = {
   oauthClientSecret: '',
   location: 'global',
   model: 'gemini-3.8-flash',
+  ttsModel: 'gemini-3.1-flash-tts-preview',
   target: 'zh-CN',
   zhTarget: 'en',
   sourcePin: '',

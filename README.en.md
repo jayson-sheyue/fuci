@@ -68,9 +68,9 @@ The installer contains the window. The first time you choose Connect, if this Ma
 
 ## Download
 
-Download the package from the [release](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.5). Open it and drag 浮词 into Applications. The package is for Apple silicon (arm64).
+Download the package from the [release](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.6). Open it and drag 浮词 into Applications. The package is for Apple silicon (arm64).
 
-- [1.3.5](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.5/fuci-1.3.5-arm64.dmg)
+- [1.3.6](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.6/fuci-1.3.6-arm64.dmg)
 
 The downloaded app is not notarized. If macOS says “浮词” Not Opened, click **Done**, not Move to Trash. Then run:
 
@@ -100,7 +100,7 @@ The current version is shown at the right of the settings title. The same page s
 
 ## Connect to GCP
 
-The repository does not contain a project ID, access token, or Google account. Those stay on this Mac. The DMG contains the window. The first Connect downloads the sign-in component, about 80MB, once, if this Mac does not already have a working gcloud. Enter the project ID, location, and model ID. Connect runs `gcloud auth print-access-token` and gets a token that lasts about an hour. If you are signed out, the browser opens for `gcloud auth login`. When the countdown ends or the token is expired, connect again. Panel opacity changes the search bar and the card together, starting at 88%, and applies as you drag. Chinese script chooses simplified or traditional for any direction that includes Chinese. The current lookup runs again after you change it.
+The repository does not contain a project ID, access token, or Google account. Those stay on this Mac. The DMG contains the window. The first Connect downloads the sign-in component, about 80MB, once, if this Mac does not already have a working gcloud. The account page takes a project ID and location, or only an AI Studio key. The models page sets the lookup model and the speech model. Connect runs `gcloud auth print-access-token` and gets a token that lasts about an hour. If you are signed out, the browser opens for `gcloud auth login`. When the countdown ends or the token is expired, connect again. On the appearance page, panel opacity changes the search bar and the card together, starting at 88%, and applies as you drag. Chinese script chooses simplified or traditional for any direction that includes Chinese. The current lookup runs again after you change it.
 
 Which APIs to enable, and which roles to grant, are listed in Before you start.
 

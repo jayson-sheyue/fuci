@@ -83,6 +83,7 @@ const state = {
   update: { available: false },
   theme: 'sky',
   locale: 'zh',
+  settingsPage: 'home',
 };
 
 function locale() {
@@ -518,7 +519,7 @@ function remember(text) {
 function applyFinal(result) {
   if (!result || result.kind === 'aborted' || result.kind === 'empty') return;
   if (result.kind === 'error') return renderError(result);
-  if (result.kind === 'setup') return openSettings(result.message);
+  if (result.kind === 'setup') return openSettings(result.message, 'account');
   if (result.kind === 'notice') return renderNotice(result);
   if (result.kind === 'word' || result.kind === 'sentence') return renderResult(result);
 }
@@ -622,7 +623,8 @@ function startAuthClock() {
   }, 1000);
 }
 
-function openSettings(message) {
+function openSettings(message, page = 'home') {
+  state.settingsPage = page;
   const boot = state.bootstrap || { settings: {}, shortcutLabel: '' };
   const settings = boot.settings || {};
   const versionText = String(boot.version || '').trim();
@@ -632,62 +634,96 @@ function openSettings(message) {
   state.auth = boot.auth || state.auth;
   syncChrome();
   showBoard(`
-    <div class="kicker"><strong>${esc(t('settings'))}</strong><span class="meta">${esc(meta)}</span></div>
+    <div class="kicker">
+      <span class="kicker-title">
+        <button type="button" class="settings-back" id="settings-back" aria-label="${esc(t('settingsBack'))}" hidden>‹</button>
+        <strong id="settings-title">${esc(t('settings'))}</strong>
+      </span>
+      <span class="meta" id="settings-meta">${esc(meta)}</span>
+    </div>
     <div id="update-offer" class="update-offer" hidden>
       <span class="update-dot"></span>
       <span>${esc(t('updateAvailable'))}</span>
       <button type="button" class="primary" id="apply-update">${esc(t('update'))}</button>
     </div>
-    <div class="field"><span>${esc(t('uiLanguage'))}</span>
-      <div class="locales" role="listbox" aria-label="${esc(t('uiLanguage'))}">
-        ${UI_LOCALES.map((item) => `<button type="button" class="locale-choice${locale() === item.id ? ' is-selected' : ''}" data-locale="${item.id}" role="option" aria-selected="${locale() === item.id ? 'true' : 'false'}">${esc(item.label)}</button>`).join('')}
+    <div data-settings-page="home">
+      <div class="field"><span>${esc(t('uiLanguage'))}</span>
+        <div class="locales" role="listbox" aria-label="${esc(t('uiLanguage'))}">
+          ${UI_LOCALES.map((item) => `<button type="button" class="locale-choice${locale() === item.id ? ' is-selected' : ''}" data-locale="${item.id}" role="option" aria-selected="${locale() === item.id ? 'true' : 'false'}">${esc(item.label)}</button>`).join('')}
+        </div>
+        <p class="ui-hint">${esc(t('uiHint'))}</p>
       </div>
-      <p class="ui-hint">${esc(t('uiHint'))}</p>
+      <button type="button" class="settings-nav" data-open-page="account">
+        <span><b>${esc(t('settingsAccount'))}</b><small id="nav-account-value">${esc(accountSummary(settings))}</small></span>
+        <span class="chev" aria-hidden="true">›</span>
+      </button>
+      <button type="button" class="settings-nav" data-open-page="models">
+        <span><b>${esc(t('settingsModels'))}</b><small id="nav-models-value">${esc(modelsSummary(settings))}</small></span>
+        <span class="chev" aria-hidden="true">›</span>
+      </button>
+      <button type="button" class="settings-nav" data-open-page="look">
+        <span><b>${esc(t('settingsLook'))}</b><small id="nav-look-value">${esc(lookSummary(settings))}</small></span>
+        <span class="chev" aria-hidden="true">›</span>
+      </button>
+      <details class="help-fold">
+        <summary>${esc(t('helpFold'))}</summary>
+        <pre class="help">${esc(t('help'))}</pre>
+      </details>
     </div>
-    <p class="notice">${esc(t('notice'))}</p>
-    <p class="mode-now">${esc(modeNow(settings))}</p>
-    <div class="setup-block">
-      <p class="mode-title">${esc(t('modeGcpTitle'))}</p>
-      <label class="field"><span>${esc(t('projectId'))}</span>
-        <input id="project-id" spellcheck="false" autocapitalize="off" placeholder="my-gcp-project" value="${esc(settings.projectId || '')}" />
+    <div data-settings-page="account" hidden>
+      <p class="notice">${esc(t('notice'))}</p>
+      <p class="mode-now">${esc(modeNow(settings))}</p>
+      <div class="setup-block">
+        <p class="mode-title">${esc(t('modeGcpTitle'))}</p>
+        <label class="field"><span>${esc(t('projectId'))}</span>
+          <input id="project-id" spellcheck="false" autocapitalize="off" placeholder="my-gcp-project" value="${esc(settings.projectId || '')}" />
+        </label>
+        <label class="field"><span>${esc(t('locationLabel'))}</span>
+          <input id="location" spellcheck="false" value="${esc(settings.location || 'global')}" />
+        </label>
+        <div class="auth-row">
+          <button type="button" class="primary" id="connect-google">${esc(t('connect'))}</button>
+          <span id="token-clock" class="token-clock">${esc(t('signedOut'))}</span>
+        </div>
+      </div>
+      <div class="setup-block">
+        <p class="mode-title">${esc(t('modeKeyTitle'))}</p>
+        <label class="field"><span>${esc(t('geminiKey'))}</span>
+          <input id="gemini-api-key" type="password" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="AIza..." value="${esc(settings.geminiApiKey || '')}" />
+        </label>
+        <p class="ui-hint">${esc(t('geminiKeyHint'))}</p>
+        <div class="auth-row">
+          <button type="button" class="ghost" id="check-key">${esc(t('checkKey'))}</button>
+        </div>
+      </div>
+    </div>
+    <div data-settings-page="models" hidden>
+      <label class="field"><span>${esc(t('modelId'))}</span>
+        <input id="model" spellcheck="false" value="${esc(settings.model || 'gemini-3.8-flash')}" />
       </label>
-      <label class="field"><span>${esc(t('locationLabel'))}</span>
-        <input id="location" spellcheck="false" value="${esc(settings.location || 'global')}" />
+      <p class="ui-hint">${esc(t('lookupModelHint'))}</p>
+      <label class="field"><span>${esc(t('ttsModel'))}</span>
+        <input id="tts-model" spellcheck="false" value="${esc(settings.ttsModel || 'gemini-3.1-flash-tts-preview')}" />
       </label>
-      <div class="auth-row">
-        <button type="button" class="primary" id="connect-google">${esc(t('connect'))}</button>
-        <span id="token-clock" class="token-clock">${esc(t('signedOut'))}</span>
-      </div>
+      <p class="ui-hint">${esc(t('ttsModelHint'))}</p>
     </div>
-    <div class="setup-block">
-      <p class="mode-title">${esc(t('modeKeyTitle'))}</p>
-      <label class="field"><span>${esc(t('geminiKey'))}</span>
-        <input id="gemini-api-key" type="password" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="AIza..." value="${esc(settings.geminiApiKey || '')}" />
+    <div data-settings-page="look" hidden>
+      <label class="field"><span>${esc(t('opacity'))} <b id="opacity-readout">${opacity}%</b></span>
+        <input id="panel-opacity" type="range" min="40" max="100" step="1" value="${opacity}" />
       </label>
-      <p class="ui-hint">${esc(t('geminiKeyHint'))}</p>
-      <div class="auth-row">
-        <button type="button" class="ghost" id="check-key">${esc(t('checkKey'))}</button>
+      <div class="field"><span>${esc(t('theme'))}</span>
+        <div class="themes" role="listbox" aria-label="${esc(t('theme'))}">
+          ${THEMES.map((theme) => `<button type="button" class="theme-swatch${themeId(settings.theme) === theme.id ? ' is-selected' : ''}" data-theme="${theme.id}" style="--swatch:${theme.swatch}" role="option" aria-selected="${themeId(settings.theme) === theme.id ? 'true' : 'false'}" aria-label="${esc(t(theme.key))}">${esc(t(theme.key))}</button>`).join('')}
+        </div>
       </div>
+      <label class="field"><span>${esc(t('scriptLabel'))}</span>
+        <select id="target">
+          <option value="zh-CN" ${settings.target !== 'zh-TW' ? 'selected' : ''}>${esc(t('simplified'))}</option>
+          <option value="zh-TW" ${settings.target === 'zh-TW' ? 'selected' : ''}>${esc(t('traditional'))}</option>
+        </select>
+      </label>
+      <label class="check"><input id="login-item" type="checkbox" ${settings.openAtLogin ? 'checked' : ''} /><span>${esc(t('launchAtLogin'))}</span></label>
     </div>
-    <label class="field"><span>${esc(t('modelId'))}</span>
-      <input id="model" spellcheck="false" value="${esc(settings.model || 'gemini-3.8-flash')}" />
-    </label>
-    <label class="field"><span>${esc(t('opacity'))} <b id="opacity-readout">${opacity}%</b></span>
-      <input id="panel-opacity" type="range" min="40" max="100" step="1" value="${opacity}" />
-    </label>
-    <div class="field"><span>${esc(t('theme'))}</span>
-      <div class="themes" role="listbox" aria-label="${esc(t('theme'))}">
-        ${THEMES.map((theme) => `<button type="button" class="theme-swatch${themeId(settings.theme) === theme.id ? ' is-selected' : ''}" data-theme="${theme.id}" style="--swatch:${theme.swatch}" role="option" aria-selected="${themeId(settings.theme) === theme.id ? 'true' : 'false'}" aria-label="${esc(t(theme.key))}">${esc(t(theme.key))}</button>`).join('')}
-      </div>
-    </div>
-    <label class="field"><span>${esc(t('scriptLabel'))}</span>
-      <select id="target">
-        <option value="zh-CN" ${settings.target !== 'zh-TW' ? 'selected' : ''}>${esc(t('simplified'))}</option>
-        <option value="zh-TW" ${settings.target === 'zh-TW' ? 'selected' : ''}>${esc(t('traditional'))}</option>
-      </select>
-    </label>
-    <label class="check"><input id="login-item" type="checkbox" ${settings.openAtLogin ? 'checked' : ''} /><span>${esc(t('launchAtLogin'))}</span></label>
-    <pre class="help">${esc(t('help'))}</pre>
     <div class="actions">
       <button type="button" class="ghost" id="quit-app">${esc(t('quit'))}</button>
       <button type="button" class="ghost" id="restart-app">${esc(t('restart'))}</button>
@@ -729,7 +765,7 @@ function openSettings(message) {
         state.bootstrap.settings = saved.settings;
         state.locale = saved.settings.uiLocale || next;
       }
-      openSettings();
+      openSettings(undefined, state.settingsPage);
     });
   });
 
@@ -859,6 +895,17 @@ function openSettings(message) {
     status.textContent = connected.ok ? t('connected') : (connected.message || t('errLogin'));
     reportHeight();
   };
+  document.querySelectorAll('[data-open-page]').forEach((button) => {
+    button.addEventListener('click', () => {
+      paintSettingsNav();
+      showSettingsPage(button.getAttribute('data-open-page'));
+    });
+  });
+  document.getElementById('settings-back').onclick = () => {
+    paintSettingsNav();
+    showSettingsPage('home');
+  };
+  showSettingsPage(state.settingsPage);
 }
 
 const PAIRS = ['en-zh', 'en-ja', 'ja-zh', 'ja-en', 'zh-en', 'zh-ja'];
@@ -908,6 +955,56 @@ function applyTheme(value) {
   if (state.bootstrap?.settings) state.bootstrap.settings.theme = id;
 }
 
+function showSettingsPage(page) {
+  const next = ['home', 'account', 'models', 'look'].includes(page) ? page : 'home';
+  state.settingsPage = next;
+  document.querySelectorAll('[data-settings-page]').forEach((node) => {
+    node.hidden = node.getAttribute('data-settings-page') !== next;
+  });
+  const back = document.getElementById('settings-back');
+  const title = document.getElementById('settings-title');
+  const meta = document.getElementById('settings-meta');
+  if (back) back.hidden = next === 'home';
+  const titles = {
+    home: t('settings'),
+    account: t('settingsAccount'),
+    models: t('settingsModels'),
+    look: t('settingsLook'),
+  };
+  if (title) title.textContent = titles[next];
+  if (meta) meta.hidden = next !== 'home';
+  reportHeight();
+}
+
+function paintSettingsNav() {
+  const form = readSettingsForm();
+  const account = document.getElementById('nav-account-value');
+  const models = document.getElementById('nav-models-value');
+  const look = document.getElementById('nav-look-value');
+  if (account) account.textContent = accountSummary(form);
+  if (models) models.textContent = modelsSummary(form);
+  if (look) look.textContent = lookSummary(form);
+}
+
+function accountSummary(settings) {
+  const project = String(settings?.projectId || '').trim();
+  if (project) return project;
+  if (String(settings?.geminiApiKey || '').trim()) return t('modeKeyTitle');
+  if (state.bootstrap?.gcloudProject) return state.bootstrap.gcloudProject;
+  return t('trayUnset');
+}
+
+function modelsSummary(settings) {
+  const lookup = String(settings?.model || '').trim() || 'gemini-3.8-flash';
+  const speech = String(settings?.ttsModel || '').trim() || 'gemini-3.1-flash-tts-preview';
+  return `${lookup} · ${speech}`;
+}
+
+function lookSummary(settings) {
+  const theme = THEMES.find((item) => item.id === themeId(settings?.theme)) || THEMES[0];
+  return `${t(theme.key)} · ${opacityPercent(settings?.panelOpacity)}%`;
+}
+
 function modeNow(settings) {
   if (String(settings?.projectId || '').trim()) return t('modeGcpNow');
   if (String(settings?.geminiApiKey || '').trim()) return t('modeKeyNow');
@@ -921,6 +1018,7 @@ function readSettingsForm() {
     geminiApiKey: fieldValue('gemini-api-key').trim(),
     target: fieldValue('target'),
     model: fieldValue('model').trim(),
+    ttsModel: fieldValue('tts-model').trim(),
     location: fieldValue('location').trim(),
     openAtLogin: document.getElementById('login-item').checked,
     panelOpacity: Number(fieldValue('panel-opacity')) / 100,
@@ -1536,19 +1634,15 @@ function applyShot() {
     }
     applyTheme('night');
     applyPanelOpacity(0.64);
-    openSettings();
-    document.querySelector('.locales')?.closest('.field')?.remove();
-    document.querySelector('.notice')?.remove();
-    document.querySelector('.mode-now')?.remove();
-    document.querySelectorAll('.setup-block').forEach((node) => node.remove());
-    for (const id of ['project-id', 'location', 'model']) {
-      document.getElementById(id)?.closest('.field')?.remove();
-    }
-    document.querySelector('.auth-row')?.remove();
-    document.querySelector('.help')?.remove();
+    openSettings(undefined, 'look');
+    document.getElementById('settings-back')?.remove();
+    document.querySelector('.kicker .meta')?.remove();
+    document.getElementById('update-offer')?.remove();
+    document.getElementById('target')?.closest('.field')?.remove();
     document.querySelector('.check')?.remove();
     document.querySelector('.actions')?.remove();
     document.getElementById('settings-status')?.remove();
+    reportHeight();
     return;
   }
   if (kind === 'settings') {
@@ -1573,7 +1667,7 @@ window.fuci.bootstrap().then((boot) => {
   const keyOnly = boot.settings?.engine === 'gemini' || (!String(boot.settings?.projectId || '').trim() && String(boot.settings?.geminiApiKey || '').trim());
   if (keyOnly) reportHeight();
   else if (!boot.auth?.signedIn) {
-    openSettings(boot.auth?.expired ? t('setupExpired') : t('setupFresh'));
+    openSettings(boot.auth?.expired ? t('setupExpired') : t('setupFresh'), 'account');
   } else reportHeight();
   applyShot();
 });

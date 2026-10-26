@@ -264,7 +264,8 @@ function currentSettings() {
 function normalizeForm(input) {
   const projectId = String(input?.projectId || '').trim();
   const location = String(input?.location || 'global').trim() || 'global';
-  const model = String(input?.model || 'gemini-3.8-flash').trim() || 'gemini-3.8-flash';
+  const model = modelId(input?.model, 'gemini-3.8-flash');
+  const ttsModel = modelId(input?.ttsModel, 'gemini-3.1-flash-tts-preview');
   const target = input?.target === 'zh-TW' ? 'zh-TW' : 'zh-CN';
   const openAtLogin = !!input?.openAtLogin;
   const panelOpacity = clampPanelOpacity(input?.panelOpacity);
@@ -278,8 +279,13 @@ function normalizeForm(input) {
   }
   if (/\s/.test(projectId)) throw new Error(tr('errProjectSpace'));
   if (!/^[a-z0-9-]{1,40}$/i.test(location)) throw new Error(tr('errLocation'));
+  return { projectId, geminiApiKey, location, model, ttsModel, oauthClientId: '', oauthClientSecret: '', target, openAtLogin, panelOpacity, theme, uiLocale };
+}
+
+function modelId(value, fallback) {
+  const model = String(value || fallback).trim() || fallback;
   if (!/^[a-zA-Z0-9._-]{1,80}$/.test(model)) throw new Error(tr('errModel'));
-  return { projectId, geminiApiKey, location, model, oauthClientId: '', oauthClientSecret: '', target, openAtLogin, panelOpacity, theme, uiLocale };
+  return model;
 }
 
 function clampPanelOpacity(value) {
@@ -305,6 +311,7 @@ function publicSettings(settings) {
     engine: engineMode(settings),
     location: settings.location || 'global',
     model: settings.model || 'gemini-3.8-flash',
+    ttsModel: settings.ttsModel || 'gemini-3.1-flash-tts-preview',
     target: settings.target === 'zh-TW' ? 'zh-TW' : 'zh-CN',
     pair: normalizePair(settings.pair, settings),
     openAtLogin: !!settings.openAtLogin,

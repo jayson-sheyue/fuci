@@ -72,9 +72,9 @@
 
 ## 下载
 
-在 [发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.5) 下载安装包。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
+在 [发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.6) 下载安装包。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
 
-- [1.3.5](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.5/fuci-1.3.5-arm64.dmg)
+- [1.3.6](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.6/fuci-1.3.6-arm64.dmg)
 
 从浏览器下载的安装包没有苹果公证。第一次打开如果弹出「“浮词” Not Opened」，点 **Done**，不要点 Move to Trash。然后在终端执行：
 
@@ -104,7 +104,7 @@ npm run pack
 
 ## 连接 GCP
 
-仓库里没有项目 ID、访问令牌或 Google 账号，这些只保存在本机。DMG 只带窗口。第一次点「一键链接」时，如果这台 Mac 上还没有能用的 gcloud，会把登录组件下载到本机，大约 80MB，只此一次。设置里填写项目 ID、Location 和模型 ID。点「一键链接」后，应用执行 `gcloud auth print-access-token` 取得大约 1 小时的访问令牌。如果还没登录，会自动打开浏览器完成 `gcloud auth login`。右侧倒计时结束或显示已失效时，再点一次一键链接。同一页的「面板不透明度」拉杆会同时调整搜索框和结果板，默认 88%，拖动后立即生效。「中文用字」决定方向里的中文是简体还是繁体。改完后，当前查询会按新写法重查。
+仓库里没有项目 ID、访问令牌或 Google 账号，这些只保存在本机。DMG 只带窗口。第一次点「一键链接」时，如果这台 Mac 上还没有能用的 gcloud，会把登录组件下载到本机，大约 80MB，只此一次。查词账号页填写项目 ID、Location，或只填 AI Studio Key。模型页可以改查词模型和朗读模型。点「一键链接」后，应用执行 `gcloud auth print-access-token` 取得大约 1 小时的访问令牌。如果还没登录，会自动打开浏览器完成 `gcloud auth login`。右侧倒计时结束或显示已失效时，再点一次一键链接。「外观」页的「面板不透明度」拉杆会同时调整搜索框和结果板，默认 88%，拖动后立即生效。「中文用字」决定方向里的中文是简体还是繁体。改完后，当前查询会按新写法重查。
 
 要开哪些 API、给账号什么权限，见上面的「使用前需要」。
 

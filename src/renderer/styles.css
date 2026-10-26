@@ -500,11 +500,41 @@ kbd[hidden],
   letter-spacing: 0.08em;
 }
 
+.kicker-title { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .kicker strong {
   color: var(--cinnabar);
   font-weight: 600;
   letter-spacing: 0.12em;
 }
+.settings-back {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 22px;
+  line-height: 1;
+  padding: 0 2px 0 0;
+}
+.settings-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+  padding: 11px 14px;
+  border: 1px solid var(--field-border);
+  border-radius: 16px;
+  background: var(--field);
+  text-align: left;
+}
+.settings-nav b { display: block; font-size: 14px; font-weight: 600; }
+.settings-nav small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 400; }
+.settings-nav .chev { color: var(--faint); font-size: 18px; line-height: 1; }
+.help-fold { margin-top: 14px; }
+.help-fold summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.help-fold .help { margin-top: 8px; }
+[data-settings-page][hidden] { display: none; }
 
 .kicker .meta {
   letter-spacing: 0.02em;
