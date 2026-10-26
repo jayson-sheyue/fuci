@@ -36,4 +36,9 @@ contextBridge.exposeInMainWorld('fuci', {
   onUpdateStatus: (handler) => {
     ipcRenderer.on('update-status', (_event, payload) => handler(payload));
   },
+  onAuthProgress: (handler) => {
+    const listener = (_event, payload) => handler(payload);
+    ipcRenderer.on('auth-progress', listener);
+    return () => ipcRenderer.removeListener('auth-progress', listener);
+  },
 });

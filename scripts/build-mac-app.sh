@@ -84,52 +84,17 @@ if (/^[0-9a-f]{40}$/i.test(commit)) {
 mkdir -p "$APP_DIR/build"
 cp "$ENTITLEMENTS" "$APP_DIR/build/entitlements.mac.plist"
 
-SDK_VERSION="${GCLOUD_VERSION:-589.0.0}"
-SDK_DIR="$ROOT/vendor/google-cloud-sdk"
-if [[ ! -f "$SDK_DIR/.fuci-ready" ]]; then
-  echo "正在下载 Google Cloud CLI ${SDK_VERSION}"
-  mkdir -p "$ROOT/vendor"
-  rm -rf "$SDK_DIR"
-  ARCHIVE="$(mktemp)"
-  curl -fL --retry 3 -o "$ARCHIVE" \
-    "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-${SDK_VERSION}-darwin-arm.tar.gz"
-  tar -xzf "$ARCHIVE" -C "$ROOT/vendor"
-  rm -f "$ARCHIVE"
-  CLOUDSDK_CONFIG="$(mktemp -d)"
-  CLOUDSDK_CORE_DISABLE_PROMPTS=1 \
-    CLOUDSDK_CONFIG="$CLOUDSDK_CONFIG" \
-    bash "$SDK_DIR/install.sh" --quiet --usage-reporting false --path-update false --command-completion false
-  rm -rf "$CLOUDSDK_CONFIG"
-  touch "$SDK_DIR/.fuci-ready"
+# Keep the languages the window actually uses. The rest are Electron's own translations.
+RES="$DIST_APP/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources"
+if [[ -d "$RES" ]]; then
+  for dir in "$RES"/*.lproj; do
+    name="$(basename "$dir" .lproj)"
+    case "$name" in
+      en|en_GB|zh_CN|zh_TW|zh_Hans|zh_Hant|ja|Base) ;;
+      *) rm -rf "$dir" ;;
+    esac
+  done
 fi
-
-# gcloud on Apple silicon does not ship a Python. Its launcher then accepts
-# /usr/bin/python3, which is 3.9 on many Macs, and gcloud refuses to start.
-PYTHON_URL="https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15+20261021-aarch64-apple-darwin-install_only_stripped.tar.gz"
-PYTHON_DIR="$SDK_DIR/platform/fuci-python"
-if [[ ! -x "$PYTHON_DIR/bin/python3" ]]; then
-  echo "正在下载 gcloud 自用的 Python"
-  mkdir -p "$SDK_DIR/platform"
-  ARCHIVE="$(mktemp)"
-  curl -fL --retry 3 -o "$ARCHIVE" "$PYTHON_URL"
-  rm -rf "$SDK_DIR/platform/python" "$PYTHON_DIR"
-  tar -xzf "$ARCHIVE" -C "$SDK_DIR/platform"
-  mv "$SDK_DIR/platform/python" "$PYTHON_DIR"
-  rm -f "$ARCHIVE"
-fi
-"$PYTHON_DIR/bin/python3" -c 'import sys; raise SystemExit(0 if sys.version_info[:2] >= (3, 10) else 1)'
-
-rm -rf "$DIST_APP/Contents/Resources/google-cloud-sdk"
-ditto "$SDK_DIR" "$DIST_APP/Contents/Resources/google-cloud-sdk"
-
-rsync -a \
-  --exclude electron \
-  --exclude electron/ \
-  --exclude @electron \
-  --exclude @electron-internal \
-  --exclude @types \
-  "$ROOT/node_modules/" "$APP_DIR/node_modules/"
-rm -f "$APP_DIR/node_modules/.bin/electron" "$APP_DIR/node_modules/.bin/install-electron"
 
 echo "正在签名"
 codesign --force --deep --sign - --entitlements "$ENTITLEMENTS" "$DIST_APP"

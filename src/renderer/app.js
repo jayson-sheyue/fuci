@@ -789,7 +789,16 @@ function openSettings(message) {
     button.disabled = true;
     status.className = 'status';
     status.textContent = t('connecting');
-    const connected = await window.fuci.connectGoogle(form);
+    const stopProgress = window.fuci.onAuthProgress((payload) => {
+      const percent = payload?.percent ? ` ${payload.percent}%` : '';
+      status.textContent = t('fetchingRuntime', { percent });
+    });
+    let connected;
+    try {
+      connected = await window.fuci.connectGoogle(form);
+    } finally {
+      stopProgress();
+    }
     button.disabled = false;
     if (connected.settings) state.bootstrap.settings = connected.settings;
     if (connected.auth) {

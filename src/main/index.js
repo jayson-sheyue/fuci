@@ -390,7 +390,11 @@ function registerIpc() {
       applyLogin(next.openAtLogin);
       alignSession(next);
       refreshLocaleChrome();
-      const auth = await beginLogin(next);
+      const auth = await beginLogin(next, {
+        onProgress: (payload) => {
+          if (win && !win.isDestroyed()) win.webContents.send('auth-progress', payload);
+        },
+      });
       return { ok: true, auth, settings: publicSettings(next) };
     } catch (error) {
       return { ok: false, message: error.message || tr('errLogin'), auth: sessionStatus() };

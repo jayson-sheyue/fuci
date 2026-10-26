@@ -1,13 +1,12 @@
 'use strict';
 
-const { spawn, execFile, execFileSync } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { ensureRuntime } = require('./gcloud-setup');
 const { httpFetch } = require('./http');
 const { tr } = require('../renderer/i18n');
-
-const PYTHON_ARCHIVE = 'https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15+20261021-aarch64-apple-darwin-install_only_stripped.tar.gz';
 
 let userData = '';
 let session = null;
@@ -130,64 +129,6 @@ function pythonForGcloud(gcloudBin) {
   return fallbackPython;
 }
 
-function supportDir() {
-  if (userData) return userData;
-  return path.join(os.homedir(), 'Library', 'Application Support', '浮词');
-}
-
-function cachedPythonPath() {
-  return path.join(supportDir(), 'fuci-python', 'bin', 'python3');
-}
-
-function execFileAsync(file, args, timeout) {
-  return new Promise((resolve, reject) => {
-    execFile(file, args, { timeout }, (error, stdout, stderr) => {
-      if (error) reject(new Error(String(stderr || stdout || error.message || '').trim()));
-      else resolve(String(stdout || ''));
-    });
-  });
-}
-
-async function downloadPython(pythonBin) {
-  const destDir = path.resolve(path.dirname(pythonBin), '..');
-  const stage = path.join(path.dirname(destDir), `.fuci-python-stage-${process.pid}`);
-  fs.rmSync(stage, { recursive: true, force: true });
-  fs.mkdirSync(stage, { recursive: true });
-  const archive = path.join(stage, 'python.tar.gz');
-  try {
-    await execFileAsync('/usr/bin/curl', ['-fL', '--retry', '3', '-o', archive, PYTHON_ARCHIVE], 180000);
-    await execFileAsync('/usr/bin/tar', ['-xzf', archive, '-C', stage], 60000);
-    const extracted = path.join(stage, 'python', 'bin', 'python3');
-    if (!pythonBinarySupported(extracted)) throw new Error(tr('errPython'));
-    fs.rmSync(destDir, { recursive: true, force: true });
-    fs.renameSync(path.join(stage, 'python'), destDir);
-    try {
-      execFileSync('/usr/bin/xattr', ['-dr', 'com.apple.quarantine', destDir], { stdio: 'ignore' });
-    } catch {
-      /* the download did not carry a quarantine flag */
-    }
-  } finally {
-    fs.rmSync(stage, { recursive: true, force: true });
-  }
-}
-
-async function ensurePython(gcloudBin) {
-  const shipped = bundledPythonFor(gcloudBin);
-  if (pythonBinarySupported(shipped)) return shipped;
-  const cached = cachedPythonPath();
-  if (pythonBinarySupported(cached)) return cached;
-  try {
-    await downloadPython(cached);
-  } catch (error) {
-    const fallback = pythonCandidates().find((bin) => fs.existsSync(bin) && pythonBinarySupported(bin));
-    if (fallback) return fallback;
-    const detail = String(error?.message || '').trim();
-    throw new Error(detail ? `${tr('errPython')} ${detail}`.slice(0, 180) : tr('errPython'));
-  }
-  if (!pythonBinarySupported(cached)) throw new Error(tr('errPython'));
-  return cached;
-}
-
 function launchEnv(bin, { allowPrompt, python } = {}) {
   const env = {
     ...process.env,
@@ -237,16 +178,16 @@ function findGcloud() {
   return '';
 }
 
-async function runGcloud(bin, args, { timeoutMs, allowPrompt }) {
-  let python = '';
+async function runGcloud(args, { timeoutMs, allowPrompt, onProgress }) {
+  let runtime;
   try {
-    python = await ensurePython(bin);
+    runtime = await ensureRuntime({ onProgress, home: userData });
   } catch (error) {
     return { code: -1, stdout: '', stderr: error.message || tr('errPython') };
   }
   return new Promise((resolve) => {
-    const child = spawn(bin, args, {
-      env: launchEnv(bin, { allowPrompt, python }),
+    const child = spawn(runtime.bin, args, {
+      env: launchEnv(runtime.bin, { allowPrompt, python: runtime.python }),
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let stdout = '';
@@ -281,8 +222,12 @@ function needsLogin(stderr) {
   return /auth login|active account|Reauthentication|not logged|no credential|invalid_grant|Please log in|could not be refreshed|There was a problem refreshing/i.test(String(stderr || ''));
 }
 
-async function printAccessToken(bin) {
-  const result = await runGcloud(bin, ['auth', 'print-access-token'], { timeoutMs: 30000, allowPrompt: false });
+async function printAccessToken(hooks) {
+  const result = await runGcloud(['auth', 'print-access-token'], {
+    timeoutMs: 30000,
+    allowPrompt: false,
+    onProgress: hooks?.onProgress,
+  });
   const token = result.stdout.trim();
   if (result.code === 0 && token && !/\s/.test(token)) return { ok: true, value: token };
   return {
@@ -308,19 +253,21 @@ async function expiryFromToken(token) {
   return Date.now() + (3600 - 15) * 1000;
 }
 
-async function beginLogin(settings) {
+async function beginLogin(settings, hooks) {
   const projectId = String(settings.projectId || '').trim();
   if (!projectId) throw new Error(tr('errNeedProject'));
   if (pending) throw new Error(tr('errLoginPending'));
-  const bin = findGcloud();
-  if (!bin) throw new Error(tr('errNoGcloud'));
   pending = true;
   try {
-    let printed = await printAccessToken(bin);
+    let printed = await printAccessToken(hooks);
     if (!printed.ok) {
-      const login = await runGcloud(bin, ['auth', 'login', '--brief'], { timeoutMs: 180000, allowPrompt: true });
+      const login = await runGcloud(['auth', 'login', '--brief'], {
+        timeoutMs: 180000,
+        allowPrompt: true,
+        onProgress: hooks?.onProgress,
+      });
       if (login.code !== 0) throw new Error(needsLogin(login.stderr) ? tr('errLoginIncomplete') : safeError(login.stderr));
-      printed = await printAccessToken(bin);
+      printed = await printAccessToken(hooks);
     }
     if (!printed.ok) throw new Error(printed.message || tr('errNoAccessToken'));
     session = {
@@ -344,7 +291,6 @@ module.exports = {
   bundledGcloudPath,
   bundledPythonFor,
   configureSession,
-  ensurePython,
   gcloudCandidates,
   launchEnv,
   pythonReleaseSupported,

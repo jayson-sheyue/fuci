@@ -66,19 +66,13 @@
   - **Cloud Translation API User**（`roles/cloudtranslate.user`）
   - **Vertex AI User**（`roles/aiplatform.user`）
 
-安装包里带有 gcloud 和它运行所需的 Python。设置里填项目 ID，点「一键链接」即可登录。账号、令牌和查词缓存只留在本机。
+安装包只带窗口。第一次点「一键链接」时，如果这台 Mac 上还没有能用的 gcloud，会把登录组件下载到本机，大约 80MB，只此一次。设置里填项目 ID，点「一键链接」即可登录。账号、令牌和查词缓存只留在本机。
 
 ## 下载
 
-在 [全部版本](https://github.com/jayson-sheyue/fuci/releases) 里下载安装包。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
+在 [发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.3) 下载安装包。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
 
-- [1.3.2（当前）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.2/fuci-1.3.2-arm64.dmg)
-- [1.3.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.1/fuci-1.3.1-arm64.dmg)
-- [1.3.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
-- [1.2.2](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.2/fuci-1.2.2-arm64.dmg)
-- [1.2.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.1/fuci-1.2.1-arm64.dmg)
-- [1.2.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.0/fuci-1.2.0-arm64.dmg)
-- [1.1.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.1.0/fuci-1.1.0-arm64.dmg)
+- [1.3.3](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.3/fuci-1.3.3-arm64.dmg)
 
 从浏览器下载的安装包没有苹果公证。第一次打开如果弹出「“浮词” Not Opened」，点 **Done**，不要点 Move to Trash。然后在终端执行：
 
@@ -104,11 +98,11 @@ npm run pack
 
 查完整的单词和句子会记在本机，大约保留最近 400 条。下次同样的查询直接用这份结果，不用再等翻译接口和 Gemini。英文大小写视为同一个词。译文方向、模型或区域不同时另存一份。不完整的结果不会被记住，比如词条接口失败，或者句子还缺读音、缺逐词释义。点小喇叭朗读仍然会向语音接口要音频。
 
-设置页标题右侧会显示当前版本。同一页可以一键切换界面语言：中文、日语、英语。也可以选七种主题：晴空、青竹、朱砂、藤紫、琥珀、海棠、夜色。点一下立即换上，搜索条、白板和悬浮球一起变。设置页底部有「退出」和「重启」，都会先保存当前设置。齿轮或悬浮球上出现红点时，表示 GitHub 上的 `main` 有可以快进的新版本。打开设置，点「更新」：源码运行的会 `git pull`，安装包会下载仓库里的最新程序文件并换掉应用里的代码。这份更新不包含 gcloud 用的 Python；如果安装包里还没有它，下一次一键链接会下载到本机。本机的设置、登录和查词缓存都留着。本地还有没推上去的提交时，不会覆盖。
+设置页标题右侧会显示当前版本。同一页可以一键切换界面语言：中文、日语、英语。也可以选七种主题：晴空、青竹、朱砂、藤紫、琥珀、海棠、夜色。点一下立即换上，搜索条、白板和悬浮球一起变。设置页底部有「退出」和「重启」，都会先保存当前设置。齿轮或悬浮球上出现红点时，表示 GitHub 上的 `main` 有可以快进的新版本。打开设置，点「更新」：源码运行的会 `git pull`，安装包会下载仓库里的最新程序文件并换掉应用里的代码。本机的设置、登录和查词缓存都留着。本地还有没推上去的提交时，不会覆盖。
 
 ## 连接 GCP
 
-仓库里没有项目 ID、访问令牌或 Google 账号，这些只保存在本机。DMG 里带有 Google Cloud CLI 和它运行所需的 Python，装好就能点「一键链接」，不用先在电脑上安装 gcloud。设置里填写项目 ID、Location 和模型 ID。点「一键链接」后，应用执行 `gcloud auth print-access-token` 取得大约 1 小时的访问令牌。如果还没登录，会自动打开浏览器完成 `gcloud auth login`。右侧倒计时结束或显示已失效时，再点一次一键链接。同一页的「面板不透明度」拉杆会同时调整搜索框和结果板，默认 88%，拖动后立即生效。「中文用字」决定方向里的中文是简体还是繁体。改完后，当前查询会按新写法重查。
+仓库里没有项目 ID、访问令牌或 Google 账号，这些只保存在本机。DMG 只带窗口。第一次点「一键链接」时，如果这台 Mac 上还没有能用的 gcloud，会把登录组件下载到本机，大约 80MB，只此一次。设置里填写项目 ID、Location 和模型 ID。点「一键链接」后，应用执行 `gcloud auth print-access-token` 取得大约 1 小时的访问令牌。如果还没登录，会自动打开浏览器完成 `gcloud auth login`。右侧倒计时结束或显示已失效时，再点一次一键链接。同一页的「面板不透明度」拉杆会同时调整搜索框和结果板，默认 88%，拖动后立即生效。「中文用字」决定方向里的中文是简体还是繁体。改完后，当前查询会按新写法重查。
 
 要开哪些 API、给账号什么权限，见上面的「使用前需要」。
 

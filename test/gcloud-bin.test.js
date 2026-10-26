@@ -5,6 +5,7 @@ const os = require('os');
 const path = require('path');
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { firstWorking } = require('../src/main/gcloud-setup');
 const {
   bundledGcloudPath,
   bundledPythonFor,
@@ -17,6 +18,15 @@ test('the bundled gcloud is preferred over a system install', () => {
   const bundled = bundledGcloudPath();
   assert.match(bundled, /google-cloud-sdk\/bin\/gcloud$/);
   assert.equal(gcloudCandidates()[0], bundled);
+});
+
+test('a gcloud without a supported Python is skipped', () => {
+  const chosen = firstWorking([
+    { bin: '/old', python: '' },
+    { bin: '/good', python: '/python3.12' },
+  ], (entry) => entry.bin === '/good');
+  assert.equal(chosen.bin, '/good');
+  assert.equal(firstWorking([{ bin: '/old', python: '' }], () => true), null);
 });
 
 test('gcloud accepts Python 3.10 through 3.15', () => {
