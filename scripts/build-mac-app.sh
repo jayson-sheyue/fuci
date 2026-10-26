@@ -47,6 +47,8 @@ PLIST="$DIST_APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VERSION}" "$PLIST"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VERSION}" "$PLIST"
 /usr/libexec/PlistBuddy -c "Set :LSApplicationCategoryType public.app-category.utilities" "$PLIST"
+/usr/libexec/PlistBuddy -c "Delete :LSUIElement" "$PLIST" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$PLIST"
 
 APP_DIR="$DIST_APP/Contents/Resources/app"
 mkdir -p "$APP_DIR"

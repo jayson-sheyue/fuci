@@ -28,6 +28,7 @@ app.setName('浮词');
 const WINDOW_WIDTH = 520;
 const ORB_WINDOW = 116;
 const IS_WIN = process.platform === 'win32';
+const IS_MAC = process.platform === 'darwin';
 let windowMode = 'bar';
 const SHORTCUTS = [
   { accelerator: 'CommandOrControl+Shift+Space', label: IS_WIN ? 'Ctrl+Shift+Space' : '⌘⇧Space' },
@@ -52,27 +53,50 @@ function asset(name) {
   return path.join(__dirname, '../../assets', name);
 }
 
+function activeWorkArea() {
+  try {
+    const cursor = screen.getCursorScreenPoint();
+    return screen.getDisplayNearestPoint(cursor).workArea;
+  } catch {
+    return screen.getPrimaryDisplay().workArea;
+  }
+}
+
 function maxBoardHeight() {
-  const area = screen.getPrimaryDisplay().workArea;
+  const area = activeWorkArea();
   return Math.max(220, Math.min(580, area.height - 180));
 }
 
-function defaultOrigin() {
-  const area = screen.getPrimaryDisplay().workArea;
+function defaultOrigin(area = activeWorkArea()) {
   return {
     x: Math.round(area.x + (area.width - WINDOW_WIDTH) / 2),
     y: Math.round(area.y + area.height * 0.16),
   };
 }
 
+function boundsVisibleInArea(bounds, area) {
+  return bounds.x < area.x + area.width - 80
+    && bounds.x + 80 > area.x
+    && bounds.y < area.y + area.height - 40
+    && bounds.y + 40 > area.y;
+}
+
 function boundsVisible(bounds) {
-  return screen.getAllDisplays().some((display) => {
-    const area = display.workArea;
-    return bounds.x < area.x + area.width - 80
-      && bounds.x + 80 > area.x
-      && bounds.y < area.y + area.height - 40
-      && bounds.y + 40 > area.y;
-  });
+  return screen.getAllDisplays().some((display) => boundsVisibleInArea(bounds, display.workArea));
+}
+
+function pinWindowToAllSpaces() {
+  if (!win || win.isDestroyed()) return;
+  if (IS_MAC) {
+    win.setVisibleOnAllWorkspaces(true, {
+      visibleOnFullScreen: true,
+      skipTransformProcessType: true,
+    });
+    win.setAlwaysOnTop(true, 'pop-up-menu', 1);
+  } else {
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    win.setAlwaysOnTop(true, 'floating');
+  }
 }
 
 function createWindow() {
@@ -97,6 +121,7 @@ function createWindow() {
     backgroundColor: '#00000000',
     roundedCorners: false,
     acceptFirstMouse: true,
+    ...(IS_MAC ? { type: 'panel' } : {}),
     ...(IS_WIN ? { icon: asset('icon.png') } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -108,8 +133,7 @@ function createWindow() {
     },
   });
 
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  win.setAlwaysOnTop(true, 'floating');
+  pinWindowToAllSpaces();
   if (IS_WIN) win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (event) => event.preventDefault());
@@ -130,6 +154,7 @@ function createWindow() {
   });
 
   win.once('ready-to-show', () => {
+    pinWindowToAllSpaces();
     win.showInactive();
   });
 
@@ -138,13 +163,18 @@ function createWindow() {
 
 function showWindow() {
   if (!win || win.isDestroyed()) return;
-  if (!boundsVisible(win.getBounds())) {
-    const origin = defaultOrigin();
-    win.setBounds({ ...win.getBounds(), x: origin.x, y: origin.y });
+  ignoreMouse = false;
+  win.setIgnoreMouseEvents(false);
+  pinWindowToAllSpaces();
+  const area = activeWorkArea();
+  const bounds = win.getBounds();
+  if (!boundsVisibleInArea(bounds, area)) {
+    const origin = defaultOrigin(area);
+    win.setPosition(origin.x, origin.y, false);
   }
   win.show();
   win.focus();
-  app.focus({ steal: true });
+  if (IS_WIN) app.focus({ steal: true });
   win.webContents.send('focus-search');
 }
 
@@ -155,7 +185,7 @@ function hideWindow() {
 
 function toggleWindow() {
   if (!win || win.isDestroyed()) return;
-  if (win.isVisible() && win.isFocused()) hideWindow();
+  if (windowMode !== 'orb' && win.isVisible() && win.isFocused()) hideWindow();
   else showWindow();
 }
 
@@ -527,7 +557,13 @@ function registerIpc() {
     const next = mode === 'orb' ? 'orb' : 'bar';
     if (next === windowMode) return;
     windowMode = next;
-    if (next === 'orb') placeWindow(ORB_WINDOW, ORB_WINDOW, true);
+    if (next === 'orb') {
+      placeWindow(ORB_WINDOW, ORB_WINDOW, true);
+      if (win && !win.isDestroyed() && win.isFocused()) win.blur();
+    } else if (win && !win.isDestroyed() && !win.isFocused()) {
+      pinWindowToAllSpaces();
+      win.focus();
+    }
   });
 
   ipcMain.on('window:height', (_event, height) => {
@@ -613,8 +649,7 @@ app.on('before-quit', () => {
 });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 if (gotLock) app.whenReady().then(() => {
-  const icon = nativeImage.createFromPath(asset('icon.png'));
-  if (process.platform === 'darwin' && app.dock && !icon.isEmpty()) app.dock.setIcon(icon);
+  if (IS_MAC && app.dock) app.dock.hide();
   refreshLocaleChrome();
   configureSession(app.getPath('userData'));
   configureLookupCache(app.getPath('userData'));

@@ -1179,6 +1179,11 @@ gear.addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key === ',') {
+    event.preventDefault();
+    if (state.mode !== 'settings') openSettings();
+    return;
+  }
   if (event.key !== 'Escape') return;
   event.preventDefault();
   if (state.mode === 'settings') {
