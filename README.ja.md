@@ -68,7 +68,8 @@
 
 [すべてのバージョン](https://github.com/jayson-sheyue/fuci/releases) からインストールパッケージを落とします。開いて「浮词」を「アプリケーション」にドラッグします。Apple シリコン（arm64）用です。
 
-- [1.3.1（最新）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.1/fuci-1.3.1-arm64.dmg)
+- [1.3.2（最新）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.2/fuci-1.3.2-arm64.dmg)
+- [1.3.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.1/fuci-1.3.1-arm64.dmg)
 - [1.3.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
 - [1.2.2](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.2/fuci-1.2.2-arm64.dmg)
 - [1.2.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.1/fuci-1.2.1-arm64.dmg)
@@ -99,7 +100,7 @@ npm run pack
 
 引き終わった単語と文は、この Mac に約 400 件残ります。次に同じものを引くときは、その結果をすぐ使い、翻訳 API と Gemini を待ちません。英語の大文字と小文字は同じ語です。訳す方向、モデル、リージョンが違うときは別に保存します。不完全な結果は残しません。たとえば辞書の取得に失敗したときや、文の読みや語ごとの意味がまだないときです。スピーカーボタンの読み上げは、そのたびに音声 API へ問い合わせます。
 
-設定のタイトル右に、いまのバージョンが出ます。同じページで表示言語を中国語、日本語、英語に切り替え、七つのテーマも選べます。下の「終了」と「再起動」は、先に設定を保存します。歯車か球に赤い点が出たら、GitHub の `main` に早送りできる新しい版があります。設定を開いて「更新」を押します。ソースから動かしている場合は `git pull`、インストールしたアプリはリポジトリの最新プログラムを落として中のコードを入れ替えます。この Mac の設定、ログイン、検索キャッシュはそのままです。まだ push していないローカルのコミットがあるときは、上書きしません。
+設定のタイトル右に、いまのバージョンが出ます。同じページで表示言語を中国語、日本語、英語に切り替え、七つのテーマも選べます。下の「終了」と「再起動」は、先に設定を保存します。歯車か球に赤い点が出たら、GitHub の `main` に早送りできる新しい版があります。設定を開いて「更新」を押します。ソースから動かしている場合は `git pull`、インストールしたアプリはリポジトリの最新プログラムを落として中のコードを入れ替えます。この更新に gcloud 用の Python は含まれません。アプリ内にまだ無いときは、次の接続でこの Mac にダウンロードします。この Mac の設定、ログイン、検索キャッシュはそのままです。まだ push していないローカルのコミットがあるときは、上書きしません。
 
 ## GCP につなぐ
 

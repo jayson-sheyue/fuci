@@ -42,3 +42,20 @@ test('a gcloud that ships with Python is launched with that interpreter', () => 
   assert.equal(env.PYTHONHOME, undefined);
   fs.rmSync(root, { recursive: true, force: true });
 });
+
+test('Python 3.9 is not passed through to gcloud', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fuci-gcloud-'));
+  const bin = path.join(root, 'bin', 'gcloud');
+  fs.mkdirSync(path.dirname(bin), { recursive: true });
+  fs.writeFileSync(bin, '');
+  const previous = process.env.CLOUDSDK_PYTHON;
+  process.env.CLOUDSDK_PYTHON = '/usr/bin/python3';
+  try {
+    const env = launchEnv(bin, { allowPrompt: false });
+    assert.notEqual(env.CLOUDSDK_PYTHON, '/usr/bin/python3');
+  } finally {
+    if (previous === undefined) delete process.env.CLOUDSDK_PYTHON;
+    else process.env.CLOUDSDK_PYTHON = previous;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

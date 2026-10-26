@@ -68,7 +68,8 @@ The installer includes gcloud and the Python it runs with. Enter the project ID 
 
 Download a package from [all releases](https://github.com/jayson-sheyue/fuci/releases). Open it and drag 浮词 into Applications. The package is for Apple silicon (arm64).
 
-- [1.3.1 (current)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.1/fuci-1.3.1-arm64.dmg)
+- [1.3.2 (current)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.2/fuci-1.3.2-arm64.dmg)
+- [1.3.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.1/fuci-1.3.1-arm64.dmg)
 - [1.3.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
 - [1.2.2](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.2/fuci-1.2.2-arm64.dmg)
 - [1.2.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.1/fuci-1.2.1-arm64.dmg)
@@ -99,7 +100,7 @@ For development, use `npm start`. The bar stays above every desktop. `⌘⇧Spac
 
 Finished word and sentence lookups are kept on this Mac, about the latest 400. The next identical lookup uses that copy and does not wait on Translation or Gemini. English capitalization does not matter. A different direction, model, or region is stored separately. Incomplete results are not stored, such as a failed dictionary call or a sentence that is still missing pronunciation or word glosses. The speaker button still requests audio from the speech API.
 
-The current version is shown at the right of the settings title. The same page switches the interface among Chinese, Japanese, and English, and offers the seven themes. Quit and Restart at the bottom save settings first. A red dot on the gear or the orb means `main` on GitHub can be fast-forwarded onto this install. Open settings and choose Update. A source checkout runs `git pull`. An installed app downloads the latest program files and replaces the code inside the app. Settings, sign-in, and the lookup cache stay on this Mac. A local commit that has not been pushed is left untouched.
+The current version is shown at the right of the settings title. The same page switches the interface among Chinese, Japanese, and English, and offers the seven themes. Quit and Restart at the bottom save settings first. A red dot on the gear or the orb means `main` on GitHub can be fast-forwarded onto this install. Open settings and choose Update. A source checkout runs `git pull`. An installed app downloads the latest program files and replaces the code inside the app. That update does not include the Python gcloud runs with; if the app does not have it yet, the next Connect downloads it onto this Mac. Settings, sign-in, and the lookup cache stay on this Mac. A local commit that has not been pushed is left untouched.
 
 ## Connect to GCP
 

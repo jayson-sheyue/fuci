@@ -1,11 +1,13 @@
 'use strict';
 
-const { spawn, execFileSync } = require('child_process');
+const { spawn, execFile, execFileSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { httpFetch } = require('./http');
 const { tr } = require('../renderer/i18n');
+
+const PYTHON_ARCHIVE = 'https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15+20261021-aarch64-apple-darwin-install_only_stripped.tar.gz';
 
 let userData = '';
 let session = null;
@@ -128,7 +130,65 @@ function pythonForGcloud(gcloudBin) {
   return fallbackPython;
 }
 
-function launchEnv(bin, { allowPrompt }) {
+function supportDir() {
+  if (userData) return userData;
+  return path.join(os.homedir(), 'Library', 'Application Support', '浮词');
+}
+
+function cachedPythonPath() {
+  return path.join(supportDir(), 'fuci-python', 'bin', 'python3');
+}
+
+function execFileAsync(file, args, timeout) {
+  return new Promise((resolve, reject) => {
+    execFile(file, args, { timeout }, (error, stdout, stderr) => {
+      if (error) reject(new Error(String(stderr || stdout || error.message || '').trim()));
+      else resolve(String(stdout || ''));
+    });
+  });
+}
+
+async function downloadPython(pythonBin) {
+  const destDir = path.resolve(path.dirname(pythonBin), '..');
+  const stage = path.join(path.dirname(destDir), `.fuci-python-stage-${process.pid}`);
+  fs.rmSync(stage, { recursive: true, force: true });
+  fs.mkdirSync(stage, { recursive: true });
+  const archive = path.join(stage, 'python.tar.gz');
+  try {
+    await execFileAsync('/usr/bin/curl', ['-fL', '--retry', '3', '-o', archive, PYTHON_ARCHIVE], 180000);
+    await execFileAsync('/usr/bin/tar', ['-xzf', archive, '-C', stage], 60000);
+    const extracted = path.join(stage, 'python', 'bin', 'python3');
+    if (!pythonBinarySupported(extracted)) throw new Error(tr('errPython'));
+    fs.rmSync(destDir, { recursive: true, force: true });
+    fs.renameSync(path.join(stage, 'python'), destDir);
+    try {
+      execFileSync('/usr/bin/xattr', ['-dr', 'com.apple.quarantine', destDir], { stdio: 'ignore' });
+    } catch {
+      /* the download did not carry a quarantine flag */
+    }
+  } finally {
+    fs.rmSync(stage, { recursive: true, force: true });
+  }
+}
+
+async function ensurePython(gcloudBin) {
+  const shipped = bundledPythonFor(gcloudBin);
+  if (pythonBinarySupported(shipped)) return shipped;
+  const cached = cachedPythonPath();
+  if (pythonBinarySupported(cached)) return cached;
+  try {
+    await downloadPython(cached);
+  } catch (error) {
+    const fallback = pythonCandidates().find((bin) => fs.existsSync(bin) && pythonBinarySupported(bin));
+    if (fallback) return fallback;
+    const detail = String(error?.message || '').trim();
+    throw new Error(detail ? `${tr('errPython')} ${detail}`.slice(0, 180) : tr('errPython'));
+  }
+  if (!pythonBinarySupported(cached)) throw new Error(tr('errPython'));
+  return cached;
+}
+
+function launchEnv(bin, { allowPrompt, python } = {}) {
   const env = {
     ...process.env,
     PATH: `${path.dirname(bin)}:${process.env.PATH || ''}`,
@@ -136,14 +196,15 @@ function launchEnv(bin, { allowPrompt }) {
     CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK: '1',
     CLOUDSDK_CORE_DISABLE_PROMPTS: allowPrompt ? '0' : '1',
   };
-  const python = pythonForGcloud(bin);
-  if (!python) return env;
-  env.CLOUDSDK_PYTHON = python;
-  if (python === bundledPythonFor(bin)) {
-    env.PYTHONDONTWRITEBYTECODE = '1';
-    delete env.PYTHONPATH;
-    delete env.PYTHONHOME;
+  const chosen = python || pythonForGcloud(bin);
+  delete env.PYTHONPATH;
+  delete env.PYTHONHOME;
+  if (!chosen) {
+    if (env.CLOUDSDK_PYTHON && !pythonBinarySupported(env.CLOUDSDK_PYTHON)) delete env.CLOUDSDK_PYTHON;
+    return env;
   }
+  env.CLOUDSDK_PYTHON = chosen;
+  env.PYTHONDONTWRITEBYTECODE = '1';
   return env;
 }
 
@@ -176,10 +237,16 @@ function findGcloud() {
   return '';
 }
 
-function runGcloud(bin, args, { timeoutMs, allowPrompt }) {
+async function runGcloud(bin, args, { timeoutMs, allowPrompt }) {
+  let python = '';
+  try {
+    python = await ensurePython(bin);
+  } catch (error) {
+    return { code: -1, stdout: '', stderr: error.message || tr('errPython') };
+  }
   return new Promise((resolve) => {
     const child = spawn(bin, args, {
-      env: launchEnv(bin, { allowPrompt }),
+      env: launchEnv(bin, { allowPrompt, python }),
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let stdout = '';
@@ -277,6 +344,7 @@ module.exports = {
   bundledGcloudPath,
   bundledPythonFor,
   configureSession,
+  ensurePython,
   gcloudCandidates,
   launchEnv,
   pythonReleaseSupported,

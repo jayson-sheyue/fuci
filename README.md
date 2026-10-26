@@ -72,7 +72,8 @@
 
 在 [全部版本](https://github.com/jayson-sheyue/fuci/releases) 里下载安装包。打开后把「浮词」拖进「应用程序」。这是 Apple 芯片（arm64）的安装包。
 
-- [1.3.1（当前）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.1/fuci-1.3.1-arm64.dmg)
+- [1.3.2（当前）](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.2/fuci-1.3.2-arm64.dmg)
+- [1.3.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.1/fuci-1.3.1-arm64.dmg)
 - [1.3.0](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.0/fuci-1.3.0-arm64.dmg)
 - [1.2.2](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.2/fuci-1.2.2-arm64.dmg)
 - [1.2.1](https://github.com/jayson-sheyue/fuci/releases/download/v1.2.1/fuci-1.2.1-arm64.dmg)
@@ -103,7 +104,7 @@ npm run pack
 
 查完整的单词和句子会记在本机，大约保留最近 400 条。下次同样的查询直接用这份结果，不用再等翻译接口和 Gemini。英文大小写视为同一个词。译文方向、模型或区域不同时另存一份。不完整的结果不会被记住，比如词条接口失败，或者句子还缺读音、缺逐词释义。点小喇叭朗读仍然会向语音接口要音频。
 
-设置页标题右侧会显示当前版本。同一页可以一键切换界面语言：中文、日语、英语。也可以选七种主题：晴空、青竹、朱砂、藤紫、琥珀、海棠、夜色。点一下立即换上，搜索条、白板和悬浮球一起变。设置页底部有「退出」和「重启」，都会先保存当前设置。齿轮或悬浮球上出现红点时，表示 GitHub 上的 `main` 有可以快进的新版本。打开设置，点「更新」：源码运行的会 `git pull`，安装包会下载仓库里的最新程序文件并换掉应用里的代码。本机的设置、登录和查词缓存都留着。本地还有没推上去的提交时，不会覆盖。
+设置页标题右侧会显示当前版本。同一页可以一键切换界面语言：中文、日语、英语。也可以选七种主题：晴空、青竹、朱砂、藤紫、琥珀、海棠、夜色。点一下立即换上，搜索条、白板和悬浮球一起变。设置页底部有「退出」和「重启」，都会先保存当前设置。齿轮或悬浮球上出现红点时，表示 GitHub 上的 `main` 有可以快进的新版本。打开设置，点「更新」：源码运行的会 `git pull`，安装包会下载仓库里的最新程序文件并换掉应用里的代码。这份更新不包含 gcloud 用的 Python；如果安装包里还没有它，下一次一键链接会下载到本机。本机的设置、登录和查词缓存都留着。本地还有没推上去的提交时，不会覆盖。
 
 ## 连接 GCP
 
