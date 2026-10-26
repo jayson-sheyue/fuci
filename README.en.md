@@ -68,9 +68,9 @@ The installer contains the window. The first time you choose Connect, if this Ma
 
 ## Download
 
-Download the package from the [release](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.6). Open it and drag 浮词 into Applications. The package is for Apple silicon (arm64).
+Download the package from the [release](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.7). Open it and drag 浮词 into Applications. The package is for Apple silicon (arm64).
 
-- [1.3.6](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.6/fuci-1.3.6-arm64.dmg)
+- [1.3.7](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)
 
 The downloaded app is not notarized. If macOS says “浮词” Not Opened, click **Done**, not Move to Trash. Then run:
 
