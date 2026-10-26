@@ -75,7 +75,7 @@ function pythonBeside(gcloudBin) {
 
 function runtimeRoot(home) {
   const defaultBase = process.platform === 'win32'
-    ? path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), '浮词')
+    ? path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'Fuci')
     : path.join(os.homedir(), 'Library', 'Application Support', '浮词');
   const base = home || defaultBase;
   return path.join(base, 'runtime');
@@ -251,14 +251,70 @@ async function placeTree(extracted, dest) {
   }
 }
 
-async function downloadTree(url, root, folderName, expectedBytes, onChunk) {
+const WIN_TAR_EXTRACT_PY = [
+  'import os, shutil, sys, tarfile',
+  'archive, stage = sys.argv[1], sys.argv[2]',
+  'skip = (',
+  '  "google-cloud-sdk/platform/gsutil",',
+  '  "google-cloud-sdk/platform/bq",',
+  '  "google-cloud-sdk/platform/bundledpythonunix",',
+  '  "google-cloud-sdk/platform/ext-runtime",',
+  ')',
+  'def lp(p):',
+  '  p = os.path.abspath(p)',
+  '  if os.name == "nt" and not p.startswith("\\\\\\\\?\\\\"):',
+  '    return "\\\\\\\\?\\\\" + p',
+  '  return p',
+  'with tarfile.open(archive, "r:gz") as tf:',
+  '  for m in tf:',
+  '    n = m.name.replace("\\\\", "/").lstrip("/")',
+  '    if not n or ".." in n.split("/") or n.startswith(skip):',
+  '      continue',
+  '    if m.issym() or m.islnk():',
+  '      continue',
+  '    target = lp(os.path.join(stage, *n.split("/")))',
+  '    if m.isdir():',
+  '      os.makedirs(target, exist_ok=True)',
+  '    elif m.isfile():',
+  '      os.makedirs(os.path.dirname(target), exist_ok=True)',
+  '      src = tf.extractfile(m)',
+  '      if src is not None:',
+  '        with src, open(target, "wb") as dst:',
+  '          shutil.copyfileobj(src, dst)',
+].join('\n');
+
+async function extractArchive(archive, stage, folderName, pythonBin) {
+  const isWin = process.platform === 'win32';
+  if (isWin && folderName === 'google-cloud-sdk' && pythonBinarySupported(pythonBin)) {
+    await execFileAsync(pythonBin, ['-c', WIN_TAR_EXTRACT_PY, archive, stage], 180000, {
+      cwd: stage,
+      windowsHide: true,
+    });
+    return;
+  }
+  const tarBin = isWin ? 'tar.exe' : '/usr/bin/tar';
+  const excludeArgs = isWin && folderName === 'google-cloud-sdk'
+    ? [
+      '--exclude=google-cloud-sdk/platform/gsutil',
+      '--exclude=google-cloud-sdk/platform/bq',
+      '--exclude=google-cloud-sdk/platform/bundledpythonunix',
+      '--exclude=google-cloud-sdk/platform/ext-runtime',
+    ]
+    : [];
+  await execFileAsync(
+    tarBin,
+    ['-xzf', path.basename(archive), ...excludeArgs],
+    120000,
+    { cwd: stage, ...(isWin ? { windowsHide: true } : {}) }
+  );
+}
+
+async function downloadTree(url, root, folderName, expectedBytes, onChunk, pythonBin) {
   const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'fuci-runtime-'));
   const archive = path.join(stage, 'archive.tar.gz');
-  const isWin = process.platform === 'win32';
-  const tarBin = isWin ? 'tar.exe' : '/usr/bin/tar';
   try {
     await downloadFile(url, archive, (received) => onChunk(received, expectedBytes));
-    await execFileAsync(tarBin, ['-xzf', archive, '-C', stage], 120000, isWin ? { windowsHide: true } : {});
+    await extractArchive(archive, stage, folderName, pythonBin);
     const extracted = path.join(stage, folderName);
     if (!fs.existsSync(extracted)) throw new Error(tr('errPython'));
     await placeTree(extracted, path.join(root, folderName));
@@ -316,7 +372,7 @@ async function installManaged(root, onProgress) {
   if (!fs.existsSync(managed.bin)) {
     await downloadTree(GCLOUD_ARCHIVE, root, 'google-cloud-sdk', SDK_BYTES, (received, fileTotal) => {
       report((fileTotal ? received / fileTotal : 0) * SDK_WEIGHT);
-    });
+    }, managed.python);
   }
   onProgress?.({ percent: 100 });
   if (!gcloudWorks(managed.bin, managed.python)) await runInstaller(root, managed.python);
@@ -340,6 +396,7 @@ async function ensureRuntime({ onProgress, home, candidates } = {}) {
 }
 
 module.exports = {
+  WIN_TAR_EXTRACT_PY,
   ensureRuntime,
   firstWorking,
   gcloudWorks,

@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[クイックスタート ↓](#ステップバイステップ導入ガイド)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.8/fuci-1.3.8-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.8/fuci-1.3.8-win-x64.zip)**
+> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[クイックスタート ↓](#ステップバイステップ導入ガイド)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.9/fuci-1.3.9-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.9/fuci-1.3.9-win-x64.zip)**
 >
 > **中文** — 查一个词，不该离开正在读的这一页。**[阅读中文说明 →](README.md)**
 >
@@ -69,10 +69,10 @@
 
 ### ステップ 1：ダウンロードとインストール
 
-[GitHub Releases ページ](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.8) からお使いの OS 向けパッケージをダウンロードします：
+[GitHub Releases ページ](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.9) からお使いの OS 向けパッケージをダウンロードします：
 
 #### 🍎 macOS（Apple シリコン M1 / M2 / M3 / M4、`arm64`）
-1. **[fuci-1.3.8-arm64.dmg をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.8/fuci-1.3.8-arm64.dmg)**
+1. **[fuci-1.3.9-arm64.dmg をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.9/fuci-1.3.9-arm64.dmg)**
 2. ダウンロードした `.dmg` を開き、**「浮词」** を **「アプリケーション（Applications）」** フォルダへドラッグします。
 3. **初回起動時の注意（macOS の未公証アプリの開き方）**：
    ブラウザからダウンロードしたアプリは Apple の公証（Notarization）を受けていないため、初回起動時に `“浮词” Not Opened（“浮词”は開かれませんでした）` と表示されることがあります。その場合は **Done（完了）** を押し（*Move to Trash / ゴミ箱に入れる* は押さないでください）、次のいずれかの方法で開いてください：
@@ -84,7 +84,7 @@
    - **方法 B（システム設定から開く）**：Done を押したあと、Mac の「システム設定 → プライバシーとセキュリティ」を開き、下部の「セキュリティ」欄にある **「このまま開く（Open Anyway）」** をクリックします。
 
 #### 🪟 Windows（Windows 10 / 11 64 ビット、`x64` ポータブル版）
-1. **[fuci-1.3.8-win-x64.zip をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.8/fuci-1.3.8-win-x64.zip)**
+1. **[fuci-1.3.9-win-x64.zip をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.9/fuci-1.3.9-win-x64.zip)**
 2. `.zip` を任意のフォルダへ展開します。
 3. フォルダ内の **`Fuci.exe`** をダブルクリックして起動します（Windows SmartScreen の確認が出た場合は「詳細情報 → 実行」をクリックしてください。下の **AI Studio 軽量モード** と組み合わせると 1 分ですぐ使い始められます）。
 
@@ -100,7 +100,7 @@
 | **必要なもの** | 通常の Google アカウントのみ | 請求（Billing）が有効な Google Cloud プロジェクト |
 | **ログイン方法** | `Gemini API Key` を一度貼るだけ（**1 時間ごとの期限切れなし**） | 「ワンクリックで接続」でブラウザ認証（トークン有効期限は**約 1 時間**） |
 | **単語・文の検索** | すべて対応（訳文・語釈・逐語解説をすべて Gemini で生成） | すべて対応（Cloud Translation で高速翻訳 ＋ Vertex AI Gemini で語釈生成） |
-| **音声読み上げ（スピーカー）** | 非対応 | 対応（Cloud Text-to-Speech を使用） |
+| **音声読み上げ（スピーカー）** | 対応（AI Studio Gemini TTS を使用） | 対応（Cloud Text-to-Speech を使用） |
 
 #### 方法 1：1 分で完了 —— AI Studio 軽量モード（GCP プロジェクト不要）
 
