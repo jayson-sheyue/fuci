@@ -131,14 +131,14 @@ Google Cloud のプロジェクト作成や請求設定を行わずに、すぐ�
    > ```
 3. **アカウントの IAM ロールを確認**
    - プロジェクトの作成者（`Owner`）アカウントでログインする場合はそのままステップ 4 へ進めます。
-   - 別のアカウントを使う場合は、[IAM 画面](https://console.cloud.google.com/iam-admin/iam) でログイン用 Google アカウントに次のロールを付与してください：
-     - **Cloud Translation API User**（`roles/cloudtranslate.user`）
-     - **Vertex AI User**（`roles/aiplatform.user`）
+   - 別のアカウントを使う場合は、[IAM 画面](https://console.cloud.google.com/iam-admin/iam) でログイン用 Google アカウントに次のロールを付与してください（`Cloud Translation API User` が無い場合も、全文翻訳は自動で Gemini にフォールバックします）：
+     - **Agent Platform User**（旧 **Vertex AI User**、`roles/aiplatform.user`）
+     - **Cloud Translation API User**（`roles/cloudtranslate.user`、推奨）
 4. **浮词で「ワンクリックで接続」**
    - **浮词** の歯車アイコン `⚙` → **「検索アカウント」** を開きます。
    - **「GCP フルモード」** に **プロジェクト ID** を入力し、`Location` は `global` のままにします。
    - 青い **「ワンクリックで接続」** ボタンを押します：
-     - この Mac に使える `gcloud` がまだ無い場合、初回のみログイン部品（約 80MB）を自動でダウンロードします。
+     - この PC / Mac に使える `gcloud` がまだ無い場合、初回のみログイン部品（約 80MB）を自動でダウンロードします。
      - ブラウザが開いて Google アカウントのログインが行われ、約 **1 時間**有効なアクセストークンを取得します。
      - ボタンの右に残り時間（例：`45:46`）が表示されます。期限が切れたら、もう一度「ワンクリックで接続」を押してください。
 

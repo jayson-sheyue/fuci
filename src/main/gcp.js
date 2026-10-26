@@ -316,7 +316,7 @@ async function defineWord(settings, token, text, lang, signal) {
 }
 
 function translationDisabled(error) {
-  return /has not been used|is disabled|SERVICE_DISABLED|accessNotConfigured|translate\.googleapis\.com/i.test(error?.message || '');
+  return /has not been used|is disabled|SERVICE_DISABLED|accessNotConfigured|translate\.googleapis\.com|cloudtranslate\./i.test(error?.message || '');
 }
 
 function sameReadingText(a, b) {

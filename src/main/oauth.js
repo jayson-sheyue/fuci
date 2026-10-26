@@ -109,9 +109,17 @@ function pythonBinarySupported(bin) {
 }
 
 function pythonCandidates() {
-  const versions = ['3.14', '3.13', '3.12', '3.11', '3.10'];
   const bins = [];
   if (process.env.CLOUDSDK_PYTHON) bins.push(process.env.CLOUDSDK_PYTHON);
+  if (process.platform === 'win32') {
+    const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+    for (const ver of ['314', '313', '312', '311', '310']) {
+      bins.push(path.join(localAppData, 'Programs', 'Python', `Python${ver}`, 'python.exe'));
+      bins.push(path.join('C:\\', `Python${ver}`, 'python.exe'));
+    }
+    return bins;
+  }
+  const versions = ['3.14', '3.13', '3.12', '3.11', '3.10'];
   for (const version of versions) {
     bins.push(`/opt/homebrew/bin/python${version}`);
     bins.push(`/usr/local/bin/python${version}`);
@@ -204,10 +212,16 @@ async function runGcloud(args, { timeoutMs, allowPrompt, onProgress }) {
     return { code: -1, stdout: '', stderr: error.message || tr('errPython') };
   }
   return new Promise((resolve) => {
-    const child = spawn(runtime.bin, args, {
+    const isWin = process.platform === 'win32';
+    const rootDir = path.resolve(path.dirname(runtime.bin), '..');
+    const gcloudPy = path.join(rootDir, 'lib', 'gcloud.py');
+    const useDirectPy = isWin && runtime.python && fs.existsSync(gcloudPy);
+    const cmd = useDirectPy ? runtime.python : (isWin && runtime.bin.includes(' ') ? `"${runtime.bin}"` : runtime.bin);
+    const cmdArgs = useDirectPy ? [gcloudPy, ...args] : args;
+    const child = spawn(cmd, cmdArgs, {
       env: launchEnv(runtime.bin, { allowPrompt, python: runtime.python }),
       stdio: ['ignore', 'pipe', 'pipe'],
-      ...(process.platform === 'win32' ? { shell: true, windowsHide: true } : {}),
+      ...(isWin ? { windowsHide: true, ...(useDirectPy ? {} : { shell: true }) } : {}),
     });
     let stdout = '';
     let stderr = '';

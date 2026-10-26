@@ -120,7 +120,8 @@ async function main() {
     fs.rmSync(outZip, { force: true });
 
     console.log('正在压缩 Windows 免安装版...');
-    execFileSync('/usr/bin/ditto', ['-c', '-k', '--keepParent', bundleDir, outZip]);
+    execFileSync('/usr/bin/find', [bundleDir, '-name', '.DS_Store', '-delete']);
+    execFileSync('/usr/bin/ditto', ['-c', '-k', '--norsrc', '--keepParent', bundleDir, outZip]);
 
     console.log('已生成');
     console.log(`  ${outZip}`);

@@ -185,7 +185,7 @@ async function downloadSnapshot() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fuci-update-'));
   const archive = path.join(dir, 'source.tar.gz');
   fs.writeFileSync(archive, bytes);
-  await run('tar', ['-xzf', archive, '-C', dir], dir, 30000);
+  await run(process.platform === 'win32' ? 'tar.exe' : 'tar', ['-xzf', archive, '-C', dir], dir, 30000);
   return { dir, snapshot: findSnapshot(dir) };
 }
 
@@ -233,6 +233,14 @@ async function applyUpdate(appPath) {
     const bundle = bundleFromAppPath(root);
     const entitlements = path.join(root, 'build', 'entitlements.mac.plist');
     if (bundle && fs.existsSync(entitlements)) {
+      const infoPlist = path.join(bundle, 'Contents', 'Info.plist');
+      if (fs.existsSync(infoPlist)) {
+        try {
+          await run('/usr/libexec/PlistBuddy', ['-c', 'Add :LSUIElement bool true', infoPlist], root, 10000);
+        } catch {
+          await run('/usr/libexec/PlistBuddy', ['-c', 'Set :LSUIElement true', infoPlist], root, 10000).catch(() => {});
+        }
+      }
       await run('codesign', ['--force', '--deep', '--sign', '-', '--entitlements', entitlements, bundle], root, 60000);
     }
     return { mode: 'bundle' };

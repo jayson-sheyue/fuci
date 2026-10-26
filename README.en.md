@@ -131,14 +131,14 @@ If you have a Google Cloud project and want instant Cloud Translation plus audio
    > ```
 3. **Verify IAM Roles**
    - If you are signing in as the project **Owner**, you already have the required permissions — skip to Step 4.
-   - Otherwise, grant your Google account these two roles in [IAM & Admin](https://console.cloud.google.com/iam-admin/iam):
-     - **Cloud Translation API User** (`roles/cloudtranslate.user`)
-     - **Vertex AI User** (`roles/aiplatform.user`)
+   - Otherwise, grant your Google account these roles in [IAM & Admin](https://console.cloud.google.com/iam-admin/iam) (if `Cloud Translation API User` is omitted, sentence translation automatically falls back to Gemini):
+     - **Agent Platform User** (formerly **Vertex AI User**, `roles/aiplatform.user`)
+     - **Cloud Translation API User** (`roles/cloudtranslate.user`, recommended)
 4. **Connect in 浮词**
    - Open **浮词** → click the gear icon `⚙` → **Lookup account**.
    - Under **GCP full mode**, enter your **Project ID** and keep **Location** set to `global`.
    - Click the blue **Connect** button:
-     - If your Mac does not already have a working `gcloud` with a supported Python version, 浮词 automatically downloads a local sign-in component (~80 MB, once only).
+     - If your computer does not already have a working `gcloud` with a supported Python version, 浮词 automatically downloads a local sign-in component (~80 MB, once only).
      - Your browser will open for Google OAuth sign-in and issue an access token valid for about **1 hour**.
      - A live countdown timer appears next to the button (e.g. `45:51`). When it expires, simply click **Connect** again.
 

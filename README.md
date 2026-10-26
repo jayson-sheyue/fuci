@@ -135,14 +135,14 @@
    > ```
 3. **确认账号 IAM 权限**
    - 如果你登录的就是该项目的创建者（`Owner`），默认已具备全部权限，直接跳到第 4 步。
-   - 如果是团队成员账号，请在 [IAM 页面](https://console.cloud.google.com/iam-admin/iam) 为用来登录的 Google 账号授予以下两个角色：
-     - **Cloud Translation API User**（`roles/cloudtranslate.user`）
-     - **Vertex AI User**（`roles/aiplatform.user`）
+   - 如果是团队成员账号，请在 [IAM 页面](https://console.cloud.google.com/iam-admin/iam) 为用来登录的 Google 账号授予以下角色（若未授予 `Cloud Translation API User`，整句翻译会自动回退至 Gemini）：
+     - **Agent Platform User**（原 **Vertex AI User**，`roles/aiplatform.user`）
+     - **Cloud Translation API User**（`roles/cloudtranslate.user`，推荐授予）
 4. **在浮词中填写并「一键链接」**
    - 打开 **浮词** → 点击齿轮 `⚙` → 进入 **「查词账号」**。
    - 在 **「GCP 满血模式」** 下填入你的 **项目 ID**，`Location` 保持默认的 `global`。
    - 点击蓝色的 **「一键链接」** 按钮：
-     - 如果这台 Mac 上还没有可用的 `gcloud`，浮词会自动为你下载登录组件到本机（约 80MB，仅首次需要）。
+     - 如果这台电脑上还没有可用的 `gcloud`，浮词会自动为你下载登录组件到本机（约 80MB，仅首次需要）。
      - 随后会自动打开浏览器完成 Google 账号登录授权，并获取约 **1 小时**有效的访问令牌。
      - 按钮右侧会显示实时倒计时（如 `45:56`）。倒计时结束或提示令牌失效时，再点一次「一键链接」即可续期。
 

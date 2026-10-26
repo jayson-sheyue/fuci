@@ -7,8 +7,10 @@ const path = require('path');
 const { tr } = require('../renderer/i18n');
 
 const GCLOUD_ARCHIVE = 'https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-589.0.0-darwin-arm.tar.gz';
-const PYTHON_ARCHIVE = 'https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15+20261021-aarch64-apple-darwin-install_only_stripped.tar.gz';
-const PYTHON_BYTES = 25017408;
+const PYTHON_ARCHIVE = process.platform === 'win32'
+  ? 'https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15+20261021-x86_64-pc-windows-msvc-install_only_stripped.tar.gz'
+  : 'https://github.com/astral-sh/python-build-standalone/releases/download/20261021/cpython-3.12.15+20261021-aarch64-apple-darwin-install_only_stripped.tar.gz';
+const PYTHON_BYTES = process.platform === 'win32' ? 20055298 : 25017408;
 const SDK_BYTES = 54172111;
 const PYTHON_WEIGHT = 24;
 const SDK_WEIGHT = 54;
@@ -166,16 +168,21 @@ function localEntries(bins) {
 function gcloudWorks(bin, python) {
   if (!bin || !python || !fs.existsSync(bin) || !pythonBinarySupported(python)) return false;
   const isWin = process.platform === 'win32';
-  const result = spawnSync(bin, ['--version'], {
+  const rootDir = path.resolve(path.dirname(bin), '..');
+  const gcloudPy = path.join(rootDir, 'lib', 'gcloud.py');
+  const useDirectPy = isWin && fs.existsSync(gcloudPy);
+  const cmd = useDirectPy ? python : (isWin && bin.includes(' ') ? `"${bin}"` : bin);
+  const cmdArgs = useDirectPy ? [gcloudPy, '--version'] : ['--version'];
+  const result = spawnSync(cmd, cmdArgs, {
     encoding: 'utf8',
     timeout: 30000,
-    ...(isWin ? { shell: true, windowsHide: true } : {}),
+    ...(isWin ? { windowsHide: true, ...(useDirectPy ? {} : { shell: true }) } : {}),
     env: {
       ...process.env,
       PATH: isWin ? `${path.dirname(bin)};${process.env.PATH || ''}` : `${path.dirname(bin)}:/usr/bin:/bin`,
       HOME: process.env.HOME || os.homedir(),
       CLOUDSDK_PYTHON: python,
-      CLOUDSDK_ROOT_DIR: path.resolve(path.dirname(bin), '..'),
+      CLOUDSDK_ROOT_DIR: rootDir,
       CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK: '1',
       CLOUDSDK_CORE_DISABLE_PROMPTS: '1',
       PYTHONDONTWRITEBYTECODE: '1',
@@ -195,7 +202,13 @@ function execFileAsync(file, args, timeout, options = {}) {
 
 function downloadFile(url, dest, onChunk) {
   return new Promise((resolve, reject) => {
-    const child = spawn('/usr/bin/curl', ['-fL', '--retry', '3', '--retry-delay', '2', '-o', dest, url]);
+    const isWin = process.platform === 'win32';
+    const curlBin = isWin ? 'curl.exe' : '/usr/bin/curl';
+    const child = spawn(
+      curlBin,
+      ['-fL', '--retry', '3', '--retry-delay', '2', '-o', dest, url],
+      isWin ? { windowsHide: true } : {}
+    );
     let stderr = '';
     const timer = setInterval(() => {
       try { onChunk(fs.statSync(dest).size, 0); } catch { /* the file is not open yet */ }
@@ -222,19 +235,30 @@ async function placeTree(extracted, dest) {
     if (error.code !== 'EXDEV') throw error;
     fs.cpSync(extracted, dest, { recursive: true });
   }
-  try {
-    execFileSync('/usr/bin/xattr', ['-dr', 'com.apple.quarantine', dest], { stdio: 'ignore' });
-  } catch {
-    /* curl did not mark the archive */
+  if (process.platform === 'win32' && path.basename(dest) === 'google-cloud-sdk') {
+    const cmdPath = path.join(dest, 'bin', 'gcloud.cmd');
+    if (!fs.existsSync(cmdPath)) {
+      fs.mkdirSync(path.dirname(cmdPath), { recursive: true });
+      fs.writeFileSync(cmdPath, '@echo off\r\n"%CLOUDSDK_PYTHON%" "%~dp0..\\lib\\gcloud.py" %*\r\n');
+    }
+  }
+  if (process.platform === 'darwin') {
+    try {
+      execFileSync('/usr/bin/xattr', ['-dr', 'com.apple.quarantine', dest], { stdio: 'ignore' });
+    } catch {
+      /* curl did not mark the archive */
+    }
   }
 }
 
 async function downloadTree(url, root, folderName, expectedBytes, onChunk) {
   const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'fuci-runtime-'));
   const archive = path.join(stage, 'archive.tar.gz');
+  const isWin = process.platform === 'win32';
+  const tarBin = isWin ? 'tar.exe' : '/usr/bin/tar';
   try {
     await downloadFile(url, archive, (received) => onChunk(received, expectedBytes));
-    await execFileAsync('/usr/bin/tar', ['-xzf', archive, '-C', stage], 120000);
+    await execFileAsync(tarBin, ['-xzf', archive, '-C', stage], 120000, isWin ? { windowsHide: true } : {});
     const extracted = path.join(stage, folderName);
     if (!fs.existsSync(extracted)) throw new Error(tr('errPython'));
     await placeTree(extracted, path.join(root, folderName));
@@ -245,17 +269,24 @@ async function downloadTree(url, root, folderName, expectedBytes, onChunk) {
 
 async function runInstaller(root, pythonBin) {
   const config = fs.mkdtempSync(path.join(os.tmpdir(), 'fuci-gcloud-config-'));
+  const isWin = process.platform === 'win32';
+  const cmd = isWin ? pythonBin : '/bin/bash';
+  const script = isWin
+    ? path.join(root, 'google-cloud-sdk', 'bin', 'bootstrapping', 'install.py')
+    : path.join(root, 'google-cloud-sdk', 'install.sh');
   try {
-    await execFileAsync('/bin/bash', [
-      path.join(root, 'google-cloud-sdk', 'install.sh'),
+    await execFileAsync(cmd, [
+      script,
       '--quiet',
       '--usage-reporting', 'false',
       '--path-update', 'false',
       '--command-completion', 'false',
     ], 180000, {
       cwd: root,
+      ...(isWin ? { windowsHide: true } : {}),
       env: {
         ...process.env,
+        CLOUDSDK_ROOT_DIR: path.join(root, 'google-cloud-sdk'),
         CLOUDSDK_PYTHON: pythonBin,
         CLOUDSDK_CONFIG: config,
         CLOUDSDK_CORE_DISABLE_PROMPTS: '1',
@@ -267,9 +298,6 @@ async function runInstaller(root, pythonBin) {
 }
 
 async function installManaged(root, onProgress) {
-  if (process.platform === 'win32') {
-    throw new Error(tr('errNoGcloud'));
-  }
   fs.mkdirSync(root, { recursive: true });
   const managed = managedPaths(root);
   let completed = 0;
