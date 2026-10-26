@@ -437,7 +437,7 @@ function remember(settings, kind, lang, text, value) {
 async function analyzeSentence(settings, token, text, lang, signal) {
   const gloss = langName(pairEnds(settings).target, settings);
   const prompt = [
-    '把句子拆成逐词释义，保持原句顺序，最多 24 个词。',
+    '把句子拆成逐词释义，保持原句顺序，每个词都要出现，不要停在句子中途。',
     '中文按词拆开，不要按字。英语按单词，保留冠词和助动词。日语按词，助词单独成项。',
     `每个词的 translation 用${gloss}写一个简短释义。`,
     'reading：英语用一行国际音标；日语用假名，含汉字时写成漢字(かな)；中文用带声调的拼音。没有读音就留空字符串。',
@@ -468,7 +468,7 @@ async function analyzeSentence(settings, token, text, lang, signal) {
     { schema: true, thinking: false },
     { schema: false, thinking: false },
   ]) {
-    const generationConfig = { maxOutputTokens: 4096, responseMimeType: 'application/json' };
+    const generationConfig = { maxOutputTokens: 8192, responseMimeType: 'application/json' };
     if (attempt.schema) generationConfig.responseSchema = schema;
     if (attempt.thinking) generationConfig.thinkingConfig = { thinkingLevel: 'LOW' };
     try {

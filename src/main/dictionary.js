@@ -25,7 +25,6 @@ function sanitizeTokens(raw) {
   const tokens = [];
   const source = Array.isArray(raw?.tokens) ? raw.tokens : [];
   for (const item of source) {
-    if (tokens.length >= 24) break;
     if (!item || typeof item !== 'object') continue;
     const text = clean(item.text, 40);
     if (!text) continue;

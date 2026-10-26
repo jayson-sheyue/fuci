@@ -102,4 +102,14 @@ test('word cards keep inflection forms and sentences keep a token breakdown', ()
   });
   assert.equal(tokens.length, 1);
   assert.equal(tokens[0].translation, '跑');
+
+  const many = sanitizeTokens({
+    tokens: Array.from({ length: 40 }, (_, index) => ({
+      text: `w${index}`,
+      reading: '',
+      translation: `词${index}`,
+    })),
+  });
+  assert.equal(many.length, 40);
+  assert.equal(many[39].text, 'w39');
 });

@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const MAX_ENTRIES = 400;
-const VERSION = 2;
+const VERSION = 3;
 
 const entries = new Map();
 let filePath = '';
