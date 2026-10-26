@@ -5,9 +5,9 @@ const fs = require('fs');
 const path = require('path');
 
 const shots = [
-  'bar', 'word', 'sentence', 'word-ja', 'orb', 'settings', 'look',
-  'en-bar', 'en-zh-word', 'en-ja-word', 'en-sentence', 'en-ui-word', 'en-orb', 'en-settings', 'en-look',
-  'ja-bar', 'ja-zh-word', 'ja-en-word', 'ja-sentence', 'ja-orb', 'ja-settings', 'ja-look',
+  'bar', 'word', 'sentence', 'word-ja', 'orb', 'settings', 'account', 'look',
+  'en-bar', 'en-zh-word', 'en-ja-word', 'en-sentence', 'en-ui-word', 'en-orb', 'en-settings', 'en-account', 'en-look',
+  'ja-bar', 'ja-zh-word', 'ja-en-word', 'ja-sentence', 'ja-orb', 'ja-settings', 'ja-account', 'ja-look',
 ];
 
 function shotPath(dir, shot) {
@@ -40,7 +40,7 @@ app.whenReady().then(async () => {
   await wait(400);
   for (const shot of shots) {
     const orb = shot === 'orb' || shot.endsWith('-orb');
-    win.setContentSize(orb ? 180 : 560, orb ? 180 : 980);
+    win.setContentSize(orb ? 180 : 560, orb ? 180 : 1120);
     await win.webContents.executeJavaScript(`resetShot(); location.hash = ${JSON.stringify(shot)}; applyShot();`);
     await wait(orb ? 800 : 300);
     const height = await win.webContents.executeJavaScript(

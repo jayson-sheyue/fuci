@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld('fuci', {
     shortcutLabel: '⌘⇧Space',
     version: '1.3.7',
     update: { available: false },
-    maxBoardHeight: 640,
+    maxBoardHeight: 1000,
   }),
   updateStatus: async () => ({ available: false }),
   authStatus: async () => ({ signedIn: true, expired: false, expiresAt: Date.now() + 46 * 60 * 1000 }),

@@ -1687,6 +1687,10 @@ function applyShot() {
     reportHeight();
     return;
   }
+  if (kind === 'account') {
+    openSettings(undefined, 'account');
+    return;
+  }
   if (kind === 'settings') {
     openSettings();
     return;

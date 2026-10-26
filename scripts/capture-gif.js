@@ -72,7 +72,7 @@ app.whenReady().then(async () => {
   const root = path.join(__dirname, '..');
   const win = new BrowserWindow({
     width: 640,
-    height: 560,
+    height: 690,
     show: false,
     frame: false,
     transparent: false,
@@ -85,7 +85,7 @@ app.whenReady().then(async () => {
   });
   await win.loadFile(path.join(root, 'src/renderer/index.html'));
   await wait(400);
-  win.setContentSize(640, 560);
+  win.setContentSize(640, 690);
   const setupError = await win.webContents.executeJavaScript(`
     try {
       document.documentElement.style.background = '#f7f4ee';
@@ -150,7 +150,7 @@ app.whenReady().then(async () => {
     await snap(360);
     await page(win, `
       renderResult(${clip.sample}());
-      document.getElementById('board-body').style.maxHeight = '248px';
+      document.getElementById('board-body').style.maxHeight = '620px';
       document.getElementById('board-body').style.overflow = 'hidden';
     `);
     await wait(180);
