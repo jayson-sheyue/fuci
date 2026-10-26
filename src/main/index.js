@@ -9,7 +9,14 @@ const { checkForUpdate, applyUpdate } = require('./update');
 const { normalizePair } = require('./classify');
 const { synthesize } = require('./tts');
 
+const IS_WIN = process.platform === 'win32';
+const IS_MAC = process.platform === 'darwin';
+
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+if (IS_WIN) {
+  app.commandLine.appendSwitch('no-sandbox');
+  app.commandLine.appendSwitch('disable-gpu-sandbox');
+}
 const { alignSession, beginLogin, configureSession, sessionStatus } = require('./oauth');
 const { setFetchImplementation } = require('./http');
 const { orbHit } = require('./orb-hit');
@@ -23,12 +30,10 @@ setFetchImplementation((url, options = {}) => net.fetch(url, {
   signal: options.signal,
 }));
 
-app.setName('浮词');
+app.setName(IS_WIN ? 'Fuci' : '浮词');
 
 const WINDOW_WIDTH = 520;
 const ORB_WINDOW = 116;
-const IS_WIN = process.platform === 'win32';
-const IS_MAC = process.platform === 'darwin';
 let windowMode = 'bar';
 const SHORTCUTS = [
   { accelerator: 'CommandOrControl+Shift+Space', label: IS_WIN ? 'Ctrl+Shift+Space' : '⌘⇧Space' },
@@ -94,8 +99,7 @@ function pinWindowToAllSpaces() {
     });
     win.setAlwaysOnTop(true, 'pop-up-menu', 1);
   } else {
-    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    win.setAlwaysOnTop(true, 'floating');
+    win.setAlwaysOnTop(true, 'pop-up-menu');
   }
 }
 
@@ -127,13 +131,13 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: !IS_WIN,
       spellcheck: false,
       backgroundThrottling: false,
     },
   });
 
-  pinWindowToAllSpaces();
+  if (IS_MAC) pinWindowToAllSpaces();
   if (IS_WIN) win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (event) => event.preventDefault());
@@ -153,10 +157,19 @@ function createWindow() {
     }, 250);
   });
 
-  win.once('ready-to-show', () => {
-    pinWindowToAllSpaces();
-    win.showInactive();
-  });
+  let shownOnce = false;
+  const revealInitialWindow = () => {
+    if (shownOnce || !win || win.isDestroyed()) return;
+    shownOnce = true;
+    if (IS_WIN) {
+      showWindow();
+    } else {
+      pinWindowToAllSpaces();
+      win.showInactive();
+    }
+  };
+  win.once('ready-to-show', revealInitialWindow);
+  win.webContents.once('did-finish-load', revealInitialWindow);
 
   win.loadFile(path.join(__dirname, '../renderer/index.html'));
 }
@@ -201,6 +214,10 @@ function registerShortcut() {
 }
 
 function buildMenu() {
+  if (IS_WIN) {
+    Menu.setApplicationMenu(null);
+    return;
+  }
   const template = [
     {
       label: '浮词',
@@ -276,11 +293,13 @@ function applyLogin(openAtLogin) {
 
 function refreshLocaleChrome() {
   setLocale(load(app.getPath('userData')).uiLocale);
-  app.setAboutPanelOptions({
-    applicationName: '浮词',
-    applicationVersion: clientVersion(),
-    credits: tr('aboutCredits'),
-  });
+  if (IS_MAC) {
+    app.setAboutPanelOptions({
+      applicationName: '浮词',
+      applicationVersion: clientVersion(),
+      credits: tr('aboutCredits'),
+    });
+  }
   buildMenu();
   tray?.refreshMenu?.();
 }
@@ -550,7 +569,9 @@ function registerIpc() {
       y = Math.max(display.y + 8, display.y + display.height - 8 - nextHeight);
     }
     if (bounds.x === x && bounds.y === y && bounds.width === nextWidth && bounds.height === nextHeight) return;
-    win.setBounds({ x, y, width: nextWidth, height: nextHeight }, animate);
+    if (IS_WIN) win.setResizable(true);
+    win.setBounds({ x, y, width: nextWidth, height: nextHeight }, Boolean(animate && !IS_WIN));
+    if (IS_WIN) win.setResizable(false);
   }
 
   ipcMain.on('window:mode', (_event, mode) => {
@@ -593,7 +614,14 @@ function registerIpc() {
   }
 
   function syncMousePassthrough() {
-    if (!win || win.isDestroyed()) return;
+    if (!win || win.isDestroyed() || !win.isVisible()) return;
+    if (IS_WIN && windowMode !== 'orb') {
+      if (ignoreMouse) {
+        ignoreMouse = false;
+        win.setIgnoreMouseEvents(false);
+      }
+      return;
+    }
     const ignore = draggingWindow ? false : !cursorHitsWidget();
     if (ignore === ignoreMouse) return;
     ignoreMouse = ignore;

@@ -185,7 +185,7 @@ async function downloadSnapshot() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fuci-update-'));
   const archive = path.join(dir, 'source.tar.gz');
   fs.writeFileSync(archive, bytes);
-  await run(process.platform === 'win32' ? 'tar.exe' : 'tar', ['-xzf', archive, '-C', dir], dir, 30000);
+  await run(process.platform === 'win32' ? 'tar.exe' : 'tar', ['-xzf', 'source.tar.gz', '-C', dir], dir, 30000);
   return { dir, snapshot: findSnapshot(dir) };
 }
 

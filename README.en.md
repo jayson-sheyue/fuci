@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **English** — One word should not make you leave the page. **[Quick Start ↓](#step-by-step-setup-guide)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-win-x64.zip)**
+> **English** — One word should not make you leave the page. **[Quick Start ↓](#step-by-step-setup-guide)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.8/fuci-1.3.8-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.8/fuci-1.3.8-win-x64.zip)**
 >
 > **中文** — 查一个词，不该离开正在读的这一页。**[阅读中文说明 →](README.md)**
 >
@@ -69,10 +69,10 @@ Inside **Lookup account**, **GCP full mode** and **AI Studio lite mode** sit sid
 
 ### Step 1: Download & Install
 
-Download the latest release for your platform from the [GitHub Releases page](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.7):
+Download the latest release for your platform from the [GitHub Releases page](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.8):
 
 #### 🍎 macOS (Apple Silicon M1 / M2 / M3 / M4, `arm64`)
-1. **[Download fuci-1.3.7-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-arm64.dmg)**
+1. **[Download fuci-1.3.8-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.8/fuci-1.3.8-arm64.dmg)**
 2. Open the downloaded `.dmg` file and drag **浮词** into your **Applications** folder.
 3. **First Launch on macOS (Bypassing the Unnotarized App Prompt)**:
    Because this open-source app is not notarized by Apple, macOS may show a `“浮词” Not Opened` dialog on first launch. Click **Done** (do **not** click *Move to Trash*), then use either method below:
@@ -84,7 +84,7 @@ Download the latest release for your platform from the [GitHub Releases page](ht
    - **Method B (System Settings)**: After clicking **Done**, open **System Settings → Privacy & Security**, scroll down to the **Security** section, and click **Open Anyway**.
 
 #### 🪟 Windows (Windows 10 / 11 64-bit, `x64` Portable)
-1. **[Download fuci-1.3.7-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.7/fuci-1.3.7-win-x64.zip)**
+1. **[Download fuci-1.3.8-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.8/fuci-1.3.8-win-x64.zip)**
 2. Extract the `.zip` archive to any folder (e.g. `D:\Apps\Fuci-win32-x64`).
 3. Double-click **`Fuci.exe`** to launch (if Windows SmartScreen prompts, click **More info → Run anyway**; pairing with **AI Studio Lite Mode** below gives an instant zero-dependency setup).
 

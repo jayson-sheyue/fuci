@@ -58,6 +58,58 @@ function ensureWinElectronZip(electronVersion) {
   return cachedZip;
 }
 
+function normalizeTree(rootDir, stamp = new Date()) {
+  const entries = fs.readdirSync(rootDir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(rootDir, entry.name);
+    if (entry.name === '.DS_Store' || entry.name.startsWith('._')) {
+      fs.rmSync(fullPath, { recursive: true, force: true });
+      continue;
+    }
+    if (entry.isDirectory()) {
+      normalizeTree(fullPath, stamp);
+      fs.chmodSync(fullPath, 0o755);
+      fs.utimesSync(fullPath, stamp, stamp);
+    } else if (entry.isFile()) {
+      const ext = path.extname(entry.name).toLowerCase();
+      const isExec = ext === '.exe' || ext === '.dll' || ext === '.cmd' || ext === '.bat';
+      fs.chmodSync(fullPath, isExec ? 0o755 : 0o644);
+      fs.utimesSync(fullPath, stamp, stamp);
+    }
+  }
+  fs.chmodSync(rootDir, 0o755);
+  fs.utimesSync(rootDir, stamp, stamp);
+}
+
+function createCleanWindowsZip(bundleDir, outZip) {
+  const pyScript = [
+    'import os, sys, time, zipfile',
+    'bundle_dir, out_zip = sys.argv[1], sys.argv[2]',
+    'parent_dir = os.path.dirname(bundle_dir)',
+    'now_tuple = time.localtime()[:6]',
+    'with zipfile.ZipFile(out_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:',
+    '    for root, dirs, files in os.walk(bundle_dir):',
+    '        dirs[:] = sorted(d for d in dirs if not d.startswith("._") and d != ".DS_Store")',
+    '        files = sorted(f for f in files if not f.startswith("._") and f != ".DS_Store")',
+    '        for f in files:',
+    '            full_path = os.path.join(root, f)',
+    '            rel_path = os.path.relpath(full_path, parent_dir).replace(os.sep, "/")',
+    '            zi = zipfile.ZipInfo(rel_path, now_tuple)',
+    '            zi.compress_type = zipfile.ZIP_DEFLATED',
+    '            zi.create_system = 3',
+    '            ext = os.path.splitext(f)[1].lower()',
+    '            mode = 0o100755 if ext in (".exe", ".dll", ".cmd", ".bat") else 0o100644',
+    '            zi.external_attr = (mode << 16)',
+    '            with open(full_path, "rb") as src, zf.open(zi, "w") as dst:',
+    '                while True:',
+    '                    chunk = src.read(1024 * 1024)',
+    '                    if not chunk:',
+    '                        break',
+    '                    dst.write(chunk)',
+  ].join('\n');
+  execFileSync('python3', ['-c', pyScript, bundleDir, outZip], { stdio: 'inherit' });
+}
+
 async function main() {
   const version = pkg.version;
   const electronVersion = electronPkg.version;
@@ -114,14 +166,20 @@ async function main() {
       fs.renameSync(electronExe, fuciExe);
     }
 
+    try {
+      execFileSync('/usr/bin/xattr', ['-cr', bundleDir], { stdio: 'ignore' });
+    } catch {
+      /* ignore if xattr is unavailable */
+    }
+    normalizeTree(bundleDir);
+
     const distDir = path.join(ROOT, 'dist');
     fs.mkdirSync(distDir, { recursive: true });
     const outZip = path.join(distDir, `fuci-${version}-win-x64.zip`);
     fs.rmSync(outZip, { force: true });
 
     console.log('正在压缩 Windows 免安装版...');
-    execFileSync('/usr/bin/find', [bundleDir, '-name', '.DS_Store', '-delete']);
-    execFileSync('/usr/bin/ditto', ['-c', '-k', '--norsrc', '--keepParent', bundleDir, outZip]);
+    createCleanWindowsZip(bundleDir, outZip);
 
     console.log('已生成');
     console.log(`  ${outZip}`);
