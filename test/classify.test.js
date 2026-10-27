@@ -69,6 +69,8 @@ test('Chinese words and sentences take the outbound path', () => {
   assert.equal(classify('人工智能', 'zh'), 'word');
   assert.equal(classify('可持续发展', 'zh'), 'word');
   assert.equal(classify('我爱你', 'zh'), 'sentence');
+  assert.equal(classify('苹果我吃', 'zh'), 'sentence');
+  assert.equal(classify('乱序中文测试一串', 'zh'), 'sentence');
   assert.equal(classify('今天天气真好', 'zh'), 'sentence');
   assert.equal(classify('你好吗', 'zh'), 'sentence');
   assert.equal(classify('这是一个苹果。', 'zh'), 'sentence');

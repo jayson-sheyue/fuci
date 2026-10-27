@@ -135,15 +135,15 @@ function classify(text, lang) {
   }
 
   if (lang === 'zh') {
-    if (sentencePunct || /[；;]/.test(value)) return 'sentence';
+    if (sentencePunct || /[；;，,、：:\s]/.test(value)) return 'sentence';
     if (/(吗|呢|吧|啊|呀)$/.test(value)) return 'sentence';
     const length = codePoints(value).length;
-    if (length >= 12) return 'sentence';
-    if (length >= 5 && /[的了是在把被就都也很还又才不没]/.test(value)) return 'sentence';
+    if (length >= 6) return 'sentence';
+    if (length >= 4 && /[的了是在把被就都也很还又才不没]/.test(value)) return 'sentence';
     if (length >= 4 && /(今天|明天|昨天|现在|已经|正在|因为|所以|如果|虽然|但是|可以|应该|觉得|知道|什么|怎么|为什么|我们|你们|他们)/.test(value)) {
       return 'sentence';
     }
-    if (/^(我|你|他|她|它)/.test(value) && length >= 3) return 'sentence';
+    if (/[我你他她它咱们]/.test(value) && length >= 3) return 'sentence';
     return 'word';
   }
 

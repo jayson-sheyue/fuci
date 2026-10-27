@@ -2,7 +2,7 @@
 
 const { classify, languageLabel, normalizePair } = require('./classify');
 const { httpFetch } = require('./http');
-const { accessToken } = require('./oauth');
+const { accessToken, ensureAccessToken } = require('./oauth');
 const { firstGloss, sanitizeDictionary, sanitizeTokens } = require('./dictionary');
 const { explainGcpError } = require('./errors');
 const lookupCache = require('./lookup-cache');
@@ -108,8 +108,10 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw abortError();
 }
 
+const FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+
 async function getToken(settings) {
-  const token = accessToken(settings);
+  const token = (await ensureAccessToken(settings)) || accessToken(settings);
   if (!token) {
     const error = new Error('TOKEN_EXPIRED');
     error.status = 401;
@@ -118,13 +120,16 @@ async function getToken(settings) {
   return token;
 }
 
-async function postJson(url, token, projectId, body, signal, apiKey) {
+async function postJsonOnce(url, token, projectId, body, signal, apiKey, includeUserProject) {
   throwIfAborted(signal);
   const headers = { 'Content-Type': 'application/json; charset=utf-8' };
-  if (apiKey) headers['x-goog-api-key'] = apiKey;
-  else {
+  if (apiKey) {
+    headers['x-goog-api-key'] = apiKey;
+  } else {
     headers.Authorization = `Bearer ${token}`;
-    headers['x-goog-user-project'] = projectId;
+    if (includeUserProject && projectId) {
+      headers['x-goog-user-project'] = projectId;
+    }
   }
   let response;
   try {
@@ -147,6 +152,25 @@ async function postJson(url, token, projectId, body, signal, apiKey) {
     throw error;
   }
   return data;
+}
+
+async function postJson(url, token, projectId, body, signal, apiKey) {
+  if (apiKey) {
+    return postJsonOnce(url, token, projectId, body, signal, apiKey, false);
+  }
+  const pathHasProject = Boolean(projectId && url.includes(`/projects/${projectId}/`));
+  try {
+    return await postJsonOnce(url, token, projectId, body, signal, apiKey, !pathHasProject);
+  } catch (error) {
+    if (error.name === 'AbortError') throw error;
+    const msg = String(error.message || '');
+    const quotaProjectError = (error.status === 403 || error.status === 400)
+      && /quota project|serviceusage\.services\.use|CONSUMER_INVALID|x-goog-user-project/i.test(msg);
+    if (quotaProjectError && projectId) {
+      return postJsonOnce(url, token, projectId, body, signal, apiKey, pathHasProject);
+    }
+    throw error;
+  }
 }
 
 function translationUrl(projectId, method) {
@@ -204,26 +228,62 @@ async function translateText(settings, token, text, source, signal) {
   return decodeEntities(translated);
 }
 
-function vertexUrl(settings) {
-  const location = settings.location || 'global';
-  const model = settings.model || 'gemini-3.8-flash';
+function vertexUrl(settings, modelOverride, locationOverride) {
+  const location = locationOverride || settings.location || 'global';
+  const model = modelOverride || settings.model || 'gemini-3.8-flash';
   const host = location === 'global'
     ? 'https://aiplatform.googleapis.com'
     : `https://${location}-aiplatform.googleapis.com`;
   return `${host}/v1/projects/${settings.projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
 }
 
-function modelUrl(settings) {
-  if (!usesApiKey(settings)) return vertexUrl(settings);
-  const model = encodeURIComponent(settings.model || 'gemini-3.8-flash');
+function modelUrl(settings, modelOverride) {
+  if (!usesApiKey(settings)) return vertexUrl(settings, modelOverride);
+  const model = encodeURIComponent(modelOverride || settings.model || 'gemini-3.8-flash');
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 }
 
-async function postModel(settings, token, body, signal) {
-  if (usesApiKey(settings)) {
-    return postJson(modelUrl(settings), '', '', body, signal, settings.geminiApiKey);
+function candidateModels(settings) {
+  const primary = String(settings?.model || '').trim() || FALLBACK_MODELS[0];
+  const models = [primary];
+  for (const fallback of FALLBACK_MODELS) {
+    if (!models.includes(fallback)) models.push(fallback);
   }
-  return postJson(vertexUrl(settings), token, settings.projectId, body, signal);
+  return models;
+}
+
+function modelNotFoundError(error) {
+  const msg = String(error?.message || '');
+  return error?.status === 404
+    || (error?.status === 400 && /not found|not supported|unsupported model|unknown model|invalid model|Publisher Model/i.test(msg));
+}
+
+async function postModel(settings, token, body, signal) {
+  const models = candidateModels(settings);
+  let lastError = null;
+  if (usesApiKey(settings)) {
+    for (const model of models) {
+      try {
+        return await postJson(modelUrl(settings, model), '', '', body, signal, settings.geminiApiKey);
+      } catch (error) {
+        if (error.name === 'AbortError') throw error;
+        lastError = error;
+        if (!modelNotFoundError(error)) throw error;
+      }
+    }
+    throw lastError;
+  }
+
+  for (const model of models) {
+    try {
+      return await postJson(vertexUrl(settings, model), token, settings.projectId, body, signal);
+    } catch (error) {
+      if (error.name === 'AbortError') throw error;
+      lastError = error;
+      if (!modelNotFoundError(error)) throw error;
+    }
+  }
+  throw lastError;
 }
 
 function dictionaryPrompt(text, lang, settings) {
@@ -251,7 +311,7 @@ function dictionaryPrompt(text, lang, settings) {
     `每个义项给一句例句：text 用${from}且包含该词，translation 用${to}。${exampleReading}例句用现代日常说法。`,
     `inflections：给出这个词在${langName(inflect, settings)}里的形态变化，最多 6 项。英语动词依次为原形、第三人称单数、现在分词、过去式、过去分词；名词为单数、复数；形容词为原级、比较级、最高级。日语动词依次为辞書形、ます形、て形、た形、ない形。中文没有词形变化时用空数组。label 用${to}，form 用${langName(inflect, settings)}，reading 是 form 的读音。`,
     '只写现代常用义项。不要收入隐语、古义或极冷僻的用法。',
-    '如果输入不是真实存在的词或短语，entries 使用空数组，note 用中文说明；否则 note 为空字符串。',
+    '如果输入是语序打乱的文字、多个词的组合或非固定搭配，仍需按还原后的本意或字面意思在 entries 中给出目标语译文与释义（不要将 entries 留空），并在 note 中用中文简短说明；只有完全无法识别的纯符号乱码才将 entries 置为空数组。',
     '不要编造明显不存在的读音。专有名词和常见缩写可以收录。',
   ].join('\n');
 }
@@ -407,7 +467,7 @@ async function fillReadings(settings, token, dictionary, source, target, signal)
 
 async function geminiTranslate(settings, token, text, source, signal) {
   const target = outputLanguage(settings);
-  const prompt = `把下面的文本翻译成${target.name}。只输出译文本身，不要加引号或解释。\n\n${text}`;
+  const prompt = `把下面的文本翻译成${target.name}。如果输入语序打乱、包含错别字或是非固定搭配，请还原其最可能表达的本意或按字面意思直接翻译，绝不要拒绝翻译或解释原因。只输出译文本身，不要加引号或解释。\n\n${text}`;
   let lastError = null;
   for (const thinking of [true, false]) {
     const generationConfig = { maxOutputTokens: 2048 };
@@ -434,9 +494,14 @@ async function translateOrFallback(settings, token, text, source, signal) {
     const translation = await translateText(settings, token, text, source, signal);
     return { translation, translationEngine: 'cloud-translation' };
   } catch (error) {
-    if (error.name === 'AbortError' || !translationDisabled(error)) throw error;
-    const translation = await geminiTranslate(settings, token, text, source, signal);
-    return { translation, translationEngine: 'gemini' };
+    if (error.name === 'AbortError') throw error;
+    try {
+      const translation = await geminiTranslate(settings, token, text, source, signal);
+      return { translation, translationEngine: 'gemini' };
+    } catch (fallbackError) {
+      if (fallbackError.name === 'AbortError') throw fallbackError;
+      throw error;
+    }
   }
 }
 
@@ -580,6 +645,17 @@ async function lookup(text, settings, { signal, onProgress } = {}) {
     }
     throwIfAborted(signal);
     translation = firstGloss(dictionary);
+    if (!translation) {
+      try {
+        translation = await geminiTranslate(scoped, token, clipped.text, lang, signal);
+        if (dictionary && (!dictionary.entries || dictionary.entries.length === 0)) {
+          dictionary.note = '';
+        }
+      } catch (fallbackError) {
+        if (fallbackError.name === 'AbortError') throw fallbackError;
+        if (!dictionaryError) dictionaryError = fallbackError;
+      }
+    }
     if (!translation && !dictionary) {
       throw dictionaryError || new Error(tr('errNoResult'));
     }
@@ -619,13 +695,26 @@ async function lookup(text, settings, { signal, onProgress } = {}) {
     translationEngine = cloudTranslation ? 'cloud-translation' : 'gemini';
     if (!translation) {
       translation = firstGloss(dictionary);
-      if (translated.translationError && !translationDisabled(translated.translationError)) {
-        translationNote = explainGcpError(translated.translationError).message;
-        translationEngine = 'cloud-translation';
+    }
+    if (!translation) {
+      try {
+        translation = await geminiTranslate(scoped, token, clipped.text, lang, signal);
+        if (dictionary && (!dictionary.entries || dictionary.entries.length === 0)) {
+          dictionary.note = '';
+        }
+      } catch (fallbackError) {
+        if (fallbackError.name === 'AbortError') throw fallbackError;
       }
     }
+    if (!translation && translated.translationError && !translationDisabled(translated.translationError)) {
+      translationNote = explainGcpError(translated.translationError).message;
+      translationEngine = 'cloud-translation';
+    }
+    if (translation && !cloudTranslation && canSpeak(targetLanguage)) {
+      translationReadingPromise = pronounce(scoped, token, translation, targetLanguage, signal);
+    }
     if (!translation && !dictionary) {
-      throw translated.translationError || dictionaryError || new Error(tr('errNoResult'));
+      throw dictionaryError || translated.translationError || new Error(tr('errNoResult'));
     }
   }
 
@@ -669,10 +758,7 @@ async function testConnection(settings, signal) {
     await translateText(probe, token, 'hello', 'en', signal);
     translationReady = true;
   } catch (error) {
-    if (error.name === 'AbortError' || !translationDisabled(error)) {
-      error.phase = 'translation';
-      throw error;
-    }
+    if (error.name === 'AbortError') throw error;
   }
   try {
     await defineWord(probe, token, 'hello', 'en', signal);

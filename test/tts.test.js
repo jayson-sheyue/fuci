@@ -134,3 +134,181 @@ test('Windows gcloud tar extractor skips symlinks and platform/gsutil without fa
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('OAuth PKCE loopback login opens browser immediately and exchanges code for token', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { beginLogin, configureSession, setBrowserOpener } = require('../src/main/oauth');
+
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fuci-oauth-test-'));
+  let openedAuthUrl = '';
+  try {
+    // Seed an active session so beginLogin triggers re-login via browserLoopbackLogin directly
+    fs.writeFileSync(path.join(tmp, 'session.json'), JSON.stringify({
+      accessToken: 'ya29.existing',
+      expiresAt: Date.now() + 60000,
+      projectId: 'team-project',
+      source: 'gcloud',
+    }));
+    configureSession(tmp);
+
+    setBrowserOpener(async (authUrl) => {
+      openedAuthUrl = authUrl;
+      const parsed = new URL(authUrl);
+      const redirectUri = parsed.searchParams.get('redirect_uri');
+      const state = parsed.searchParams.get('state');
+      const callbackUrl = `${redirectUri}?code=mock_auth_code&state=${encodeURIComponent(state)}`;
+      await fetch(callbackUrl);
+    });
+
+    setFetchImplementation(async (url, options) => {
+      assert.equal(url, 'https://oauth2.googleapis.com/token');
+      const params = new URLSearchParams(options.body);
+      assert.equal(params.get('code'), 'mock_auth_code');
+      assert.equal(params.get('grant_type'), 'authorization_code');
+      assert.ok(params.get('code_verifier'));
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          access_token: 'ya29.new_pkce_token',
+          refresh_token: '1//mock_refresh_token',
+          expires_in: 3600,
+        }),
+      };
+    });
+
+    const status = await beginLogin({ projectId: 'team-project' });
+    assert.ok(openedAuthUrl.startsWith('https://accounts.google.com/o/oauth2/v2/auth?'));
+    assert.equal(status.signedIn, true);
+    const saved = JSON.parse(fs.readFileSync(path.join(tmp, 'session.json'), 'utf8'));
+    assert.equal(saved.accessToken, 'ya29.new_pkce_token');
+    assert.equal(saved.refreshToken, '1//mock_refresh_token');
+  } finally {
+    setBrowserOpener(null);
+    configureSession('');
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('Full mode avoids x-goog-user-project 403 and falls back when Cloud Translation or primary model fails', async () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const { configureSession } = require('../src/main/oauth');
+  const { lookup, clearCache } = require('../src/main/gcp');
+
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'fuci-gcp-full-'));
+  try {
+    fs.writeFileSync(path.join(tmp, 'session.json'), JSON.stringify({
+      accessToken: 'ya29.member_token',
+      expiresAt: Date.now() + 60000,
+      projectId: 'team-project',
+      source: 'gcloud',
+    }));
+    configureSession(tmp);
+    clearCache();
+
+    const calls = [];
+    setFetchImplementation(async (url, options) => {
+      calls.push({ url, headers: options.headers });
+      // Ensure x-goog-user-project is NOT sent when /projects/<id>/ is in the URL
+      assert.equal(options.headers['x-goog-user-project'], undefined);
+
+      if (url.includes('translation.googleapis.com')) {
+        return {
+          ok: false,
+          status: 403,
+          statusText: 'Forbidden',
+          json: async () => ({ error: { message: 'Permission cloudtranslate.generalModels.predict denied' } }),
+        };
+      }
+      if (url.includes('gemini-3.8-flash')) {
+        return {
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+          json: async () => ({ error: { message: 'Publisher Model gemini-3.8-flash was not found' } }),
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          candidates: [{
+            content: {
+              parts: [{ text: 'Hello world' }],
+            },
+          }],
+        }),
+      };
+    });
+
+    const res = await lookup('你好世界今天天气真好', {
+      route: 'gcp',
+      projectId: 'team-project',
+      pair: 'zh-en',
+      model: 'gemini-3.8-flash',
+      location: 'global',
+    });
+    assert.equal(res.kind, 'sentence');
+    assert.equal(res.translation, 'Hello world');
+    assert.ok(calls.some((c) => c.url.includes('gemini-2.5-flash')));
+  } finally {
+    configureSession('');
+    clearCache();
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('Lite mode translates scrambled Chinese even when dictionary entries are empty', async () => {
+  const { lookup, clearCache } = require('../src/main/gcp');
+  clearCache();
+
+  setFetchImplementation(async (_url, options) => {
+    const body = JSON.parse(options.body);
+    const promptText = body.contents?.[0]?.parts?.[0]?.text || '';
+    if (promptText.includes('为词典卡片编写一个词条')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          candidates: [{
+            content: {
+              parts: [{
+                text: JSON.stringify({
+                  headword: '果苹吃',
+                  phonetic: 'guǒ píng chī',
+                  lemma: '',
+                  note: '这不是一个真实存在的中文词，无法翻译。',
+                  inflections: [],
+                  entries: [],
+                }),
+              }],
+            },
+          }],
+        }),
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        candidates: [{
+          content: {
+            parts: [{ text: 'eat apples' }],
+          },
+        }],
+      }),
+    };
+  });
+
+  const res = await lookup('果苹吃', {
+    route: 'gemini',
+    geminiApiKey: 'AIzaSyTestKey1234567890',
+    pair: 'zh-en',
+  });
+  assert.equal(res.translation, 'eat apples');
+  assert.equal(res.dictionary?.note || '', '');
+});

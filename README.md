@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **中文** — 查一个词，不该离开正在读的这一页。**[快速上手 ↓](#保姆级上手教程)** · **[macOS 下载 (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.9/fuci-1.3.9-arm64.dmg)** · **[Windows 下载 (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.9/fuci-1.3.9-win-x64.zip)**
+> **中文** — 查一个词，不该离开正在读的这一页。**[快速上手 ↓](#保姆级上手教程)** · **[macOS 下载 (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.0/fuci-1.4.0-arm64.dmg)** · **[Windows 下载 (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.0/fuci-1.4.0-win-x64.zip)**
 >
 > **English** — One word should not make you leave the page. **[Read in English →](README.en.md)**
 >
@@ -73,10 +73,10 @@
 
 ### 第一步：下载与安装
 
-在 [GitHub Releases 发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.3.9) 选择对应系统的最新安装包：
+在 [GitHub Releases 发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.0) 选择对应系统的最新安装包：
 
 #### 🍎 macOS（Apple 芯片 M1 / M2 / M3 / M4，`arm64`）
-1. **[点击下载 fuci-1.3.9-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.9/fuci-1.3.9-arm64.dmg)**
+1. **[点击下载 fuci-1.4.0-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.0/fuci-1.4.0-arm64.dmg)**
 2. 双击打开下载好的 `.dmg` 文件，将 **「浮词」** 拖进 **「应用程序（Applications）」** 文件夹。
 3. **首次打开必看（解决 macOS 未公证弹窗）**：
    从浏览器下载的开源安装包没有苹果商业公证。第一次打开如果弹出 `“浮词” Not Opened（未打开“浮词”）`，请先点 **Done（完成）**（**切勿**点 Move to Trash / 移到废纸篓），然后任选以下一种方式解除限制：
@@ -88,7 +88,7 @@
    - **方式 B（系统设置点选）**：点 Done 之后，打开 Mac「系统设置 → 隐私与安全性」，滑到下方「安全性」一栏，点击 **「仍要打开（Open Anyway）」**。
 
 #### 🪟 Windows（Windows 10 / 11 64 位，`x64` 免安装绿色版）
-1. **[点击下载 fuci-1.3.9-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.3.9/fuci-1.3.9-win-x64.zip)**
+1. **[点击下载 fuci-1.4.0-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.0/fuci-1.4.0-win-x64.zip)**
 2. 将压缩包完整解压到任意目录（如 `D:\Apps\Fuci-win32-x64`）。
 3. 双击目录中的 **`Fuci.exe`** 即可直接启动（若弹出 Windows SmartScreen 提示，点击「更多信息 → 仍要运行」即可；建议搭配下方的 **AI Studio 轻量模式** 使用，开箱即用）。
 

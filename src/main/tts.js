@@ -1,7 +1,7 @@
 'use strict';
 
 const { httpFetch } = require('./http');
-const { accessToken } = require('./oauth');
+const { accessToken, ensureAccessToken } = require('./oauth');
 const { usesApiKey } = require('./settings');
 const { tr } = require('../renderer/i18n');
 
@@ -125,14 +125,52 @@ function unsupportedModel(error) {
 }
 
 async function synthesizeOnce(settings, token, text, lang, model, signal) {
-  const response = await httpFetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
+  for (const sendProject of [true, false]) {
+    const headers = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json; charset=utf-8',
+    };
+    if (sendProject && settings.projectId) {
+      headers['x-goog-user-project'] = settings.projectId;
+    }
+    const response = await httpFetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(speechRequest(text, lang, model)),
+      signal,
+    });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok) {
+      if (!data.audioContent) {
+        throw Object.assign(new Error(tr('errNoAudio')), { status: 502 });
+      }
+      return data.audioContent;
+    }
+    const msg = data.error?.message || response.statusText || tr('errSpeechFail');
+    const error = new Error(msg);
+    error.status = response.status;
+    if (sendProject && (response.status === 403 || response.status === 400)
+      && /serviceusage\.services\.use|CONSUMER_INVALID|quota project/i.test(msg)) {
+      continue;
+    }
+    throw error;
+  }
+  throw Object.assign(new Error(tr('errSpeechFail')), { status: 502 });
+}
+
+async function synthesizeVertexOnce(settings, token, text, lang, model, signal) {
+  const location = settings.location || 'global';
+  const host = location === 'global'
+    ? 'https://aiplatform.googleapis.com'
+    : `https://${location}-aiplatform.googleapis.com`;
+  const url = `${host}/v1/projects/${settings.projectId}/locations/${location}/publishers/google/models/${encodeURIComponent(model)}:generateContent`;
+  const response = await httpFetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json; charset=utf-8',
-      'x-goog-user-project': settings.projectId,
     },
-    body: JSON.stringify(speechRequest(text, lang, model)),
+    body: JSON.stringify(geminiSpeechRequest(text, lang)),
     signal,
   });
   const data = await response.json().catch(() => ({}));
@@ -141,10 +179,12 @@ async function synthesizeOnce(settings, token, text, lang, model, signal) {
     error.status = response.status;
     throw error;
   }
-  if (!data.audioContent) {
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  const inline = parts.find((part) => part?.inlineData?.data)?.inlineData;
+  if (!inline?.data) {
     throw Object.assign(new Error(tr('errNoAudio')), { status: 502 });
   }
-  return data.audioContent;
+  return ensureDecodableAudio(inline.data, inline.mimeType);
 }
 
 async function synthesizeGeminiOnce(apiKey, text, lang, model, signal) {
@@ -211,7 +251,7 @@ async function synthesize(text, lang, settings, signal) {
   if (!settings?.projectId) {
     throw Object.assign(new Error(tr('errNoProjectShort')), { status: 0 });
   }
-  const token = accessToken(settings);
+  const token = (await ensureAccessToken(settings)) || accessToken(settings);
   if (!token) {
     if (String(settings?.geminiApiKey || '').trim()) {
       const audio = await synthesizeWithGeminiKey(settings, value, lang, signal);
@@ -235,6 +275,17 @@ async function synthesize(text, lang, settings, signal) {
       if (error.name === 'AbortError') throw error;
       lastError = error;
       if (!unsupportedModel(error)) break;
+    }
+  }
+  for (const vertexModel of geminiSpeechModels(settings)) {
+    try {
+      const audio = await synthesizeVertexOnce(settings, token, value, lang, vertexModel, signal);
+      cache.set(key, audio);
+      if (cache.size > 30) cache.delete(cache.keys().next().value);
+      return audio;
+    } catch (vertexError) {
+      if (vertexError.name === 'AbortError') throw vertexError;
+      if (!unsupportedModel(vertexError)) break;
     }
   }
   if (String(settings?.geminiApiKey || '').trim()) {

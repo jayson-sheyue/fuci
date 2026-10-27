@@ -1,12 +1,23 @@
 'use strict';
 
 const { spawn, execFileSync } = require('child_process');
+const crypto = require('crypto');
 const fs = require('fs');
+const http = require('http');
 const os = require('os');
 const path = require('path');
 const { ensureRuntime } = require('./gcloud-setup');
 const { httpFetch } = require('./http');
 const { tr } = require('../renderer/i18n');
+
+const OAUTH_CLIENT_ID = '32555940559.apps.googleusercontent.com';
+const OAUTH_CLIENT_SECRET = 'ZmssLNjJy2998hD4CTg2ejr2';
+const OAUTH_SCOPES = [
+  'openid',
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/cloud-platform',
+  'https://www.googleapis.com/auth/accounts.reauth',
+].join(' ');
 
 let userData = '';
 let session = null;
@@ -27,17 +38,20 @@ function configureSession(dir) {
       fs.rmSync(sessionFile(), { force: true });
       return;
     }
-    if (Date.now() >= Number(raw.expiresAt)) {
+    const refreshToken = typeof raw.refreshToken === 'string' ? raw.refreshToken : '';
+    if (Date.now() >= Number(raw.expiresAt) && !refreshToken) {
       expired = true;
       fs.rmSync(sessionFile(), { force: true });
       return;
     }
     session = {
       accessToken: raw.accessToken,
+      refreshToken,
       expiresAt: Number(raw.expiresAt),
       projectId: String(raw.projectId || ''),
       source: 'gcloud',
     };
+    if (Date.now() >= session.expiresAt) expired = true;
   } catch {
     session = null;
   }
@@ -48,6 +62,7 @@ function writeSession() {
   fs.mkdirSync(userData, { recursive: true });
   fs.writeFileSync(sessionFile(), JSON.stringify({
     accessToken: session.accessToken,
+    refreshToken: session.refreshToken || '',
     expiresAt: session.expiresAt,
     projectId: session.projectId,
     source: 'gcloud',
@@ -68,8 +83,11 @@ function alignSession(settings) {
 }
 
 function sessionStatus() {
-  if (session && Date.now() >= session.expiresAt) dropSession(true);
-  if (!session) return { signedIn: false, expired, expiresAt: 0 };
+  if (session && Date.now() >= session.expiresAt) {
+    if (!session.refreshToken) dropSession(true);
+    else expired = true;
+  }
+  if (!session || Date.now() >= session.expiresAt) return { signedIn: false, expired, expiresAt: 0 };
   return { signedIn: true, expired: false, expiresAt: session.expiresAt };
 }
 
@@ -204,6 +222,49 @@ function findGcloud() {
   return '';
 }
 
+let customBrowserOpener = null;
+
+function setBrowserOpener(fn) {
+  customBrowserOpener = typeof fn === 'function' ? fn : null;
+}
+
+async function openExternalBrowser(url) {
+  if (customBrowserOpener) {
+    await customBrowserOpener(url);
+    return true;
+  }
+  try {
+    const electron = require('electron');
+    if (electron?.shell?.openExternal) {
+      await electron.shell.openExternal(url);
+      return true;
+    }
+  } catch {
+    /* non-Electron environment */
+  }
+  try {
+    if (process.platform === 'darwin') {
+      const child = spawn('open', [url], { detached: true, stdio: 'ignore' });
+      child.unref();
+      return true;
+    }
+    if (process.platform === 'win32') {
+      const child = spawn('rundll32.exe', ['url.dll,FileProtocolHandler', url], {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+      child.unref();
+      return true;
+    }
+    const child = spawn('xdg-open', [url], { detached: true, stdio: 'ignore' });
+    child.unref();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function runGcloud(args, { timeoutMs, allowPrompt, onProgress }) {
   let runtime;
   try {
@@ -225,12 +286,22 @@ async function runGcloud(args, { timeoutMs, allowPrompt, onProgress }) {
     });
     let stdout = '';
     let stderr = '';
+    let openedUrl = false;
     const timer = setTimeout(() => {
       child.kill('SIGTERM');
       resolve({ code: -1, stdout: '', stderr: tr('errGcloudTimeout') });
     }, timeoutMs);
     child.stdout.on('data', (chunk) => { stdout += chunk; });
-    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+      if (allowPrompt && !openedUrl) {
+        const match = stderr.match(/https:\/\/accounts\.google\.com\/[^\s"']+/);
+        if (match) {
+          openedUrl = true;
+          openExternalBrowser(match[0]);
+        }
+      }
+    });
     child.on('error', (error) => {
       clearTimeout(timer);
       resolve({ code: -1, stdout: '', stderr: error.message || tr('errGcloudStart') });
@@ -253,6 +324,54 @@ function safeError(stderr) {
 
 function needsLogin(stderr) {
   return /auth login|active account|Reauthentication|not logged|no credential|invalid_grant|Please log in|could not be refreshed|There was a problem refreshing/i.test(String(stderr || ''));
+}
+
+async function tryQuickGcloudToken() {
+  const isWin = process.platform === 'win32';
+  const runtimeCandidates = [];
+  if (userData) {
+    runtimeCandidates.push(path.join(userData, 'runtime', 'google-cloud-sdk', 'bin', isWin ? 'gcloud.cmd' : 'gcloud'));
+  }
+  runtimeCandidates.push(...gcloudCandidates());
+  const bin = runtimeCandidates.find((candidate) => candidate && fs.existsSync(candidate));
+  if (!bin) return null;
+  const python = pythonForGcloud(bin);
+  if (!python) return null;
+  return new Promise((resolve) => {
+    const rootDir = path.resolve(path.dirname(bin), '..');
+    const gcloudPy = path.join(rootDir, 'lib', 'gcloud.py');
+    const useDirectPy = isWin && fs.existsSync(gcloudPy);
+    const args = ['auth', 'print-access-token', '--quiet'];
+    const cmd = useDirectPy ? python : (isWin && bin.includes(' ') ? `"${bin}"` : bin);
+    const cmdArgs = useDirectPy ? [gcloudPy, ...args] : args;
+    const child = spawn(cmd, cmdArgs, {
+      env: {
+        ...launchEnv(bin, { allowPrompt: false, python }),
+        CLOUDSDK_AUTH_DISABLE_REAUTH: '1',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+      ...(isWin ? { windowsHide: true, ...(useDirectPy ? {} : { shell: true }) } : {}),
+    });
+    let stdout = '';
+    const timer = setTimeout(() => {
+      try { child.kill('SIGTERM'); } catch { /* ignore */ }
+      resolve(null);
+    }, 3000);
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.on('error', () => {
+      clearTimeout(timer);
+      resolve(null);
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      const token = stdout.trim();
+      if (code === 0 && token && /^ya29\./.test(token) && !/\s/.test(token)) {
+        resolve(token);
+      } else {
+        resolve(null);
+      }
+    });
+  });
 }
 
 async function printAccessToken(hooks) {
@@ -286,26 +405,228 @@ async function expiryFromToken(token) {
   return Date.now() + (3600 - 15) * 1000;
 }
 
-async function beginLogin(settings, hooks) {
+async function refreshAccessToken(refreshToken) {
+  if (!refreshToken) return null;
+  try {
+    const response = await httpFetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: OAUTH_CLIENT_ID,
+        client_secret: OAUTH_CLIENT_SECRET,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }).toString(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.access_token) return null;
+    const seconds = Number(data.expires_in) || 3600;
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token || refreshToken,
+      expiresAt: Date.now() + Math.max(30, seconds - 15) * 1000,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function ensureAccessToken(settings) {
+  alignSession(settings);
+  if (session && Date.now() < session.expiresAt && session.accessToken) {
+    return session.accessToken;
+  }
+  if (session && session.refreshToken) {
+    const refreshed = await refreshAccessToken(session.refreshToken);
+    if (refreshed) {
+      session = {
+        ...session,
+        accessToken: refreshed.accessToken,
+        refreshToken: refreshed.refreshToken,
+        expiresAt: refreshed.expiresAt,
+      };
+      expired = false;
+      writeSession();
+      return session.accessToken;
+    }
+    dropSession(true);
+  }
+  return accessToken(settings);
+}
+
+function listenLoopback(handler) {
+  const ports = [8085, 8086, 8087, 0];
+  return new Promise((resolve, reject) => {
+    let index = 0;
+    const tryNext = () => {
+      if (index >= ports.length) {
+        reject(new Error(tr('errLogin')));
+        return;
+      }
+      const port = ports[index++];
+      const server = http.createServer(handler);
+      server.once('error', () => {
+        try { server.close(); } catch { /* ignore */ }
+        tryNext();
+      });
+      server.listen(port, '127.0.0.1', () => {
+        const addr = server.address();
+        resolve({ server, port: addr.port });
+      });
+    };
+    tryNext();
+  });
+}
+
+function callbackHtml(success, detail = '') {
+  const title = success ? '浮词 · 登录成功' : '浮词 · 登录未完成';
+  const heading = success ? 'Google 账号授权成功' : '授权未完成';
+  const body = success
+    ? '已完成连接，现在可以关闭此浏览器标签页并返回「浮词」开始查词。'
+    : (detail || '请返回「浮词」设置页重试。');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI", sans-serif;background:#f7f6f2;color:#1f1f1d;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.card{background:#fff;border:1px solid #e3e1da;border-radius:16px;padding:32px 36px;max-width:420px;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,.06)}
+h1{font-size:20px;margin:0 0 10px}p{font-size:14px;color:#5f5e5a;line-height:1.6;margin:0}</style></head>
+<body><div class="card"><h1>${heading}</h1><p>${body}</p></div>
+${success ? '<script>setTimeout(()=>{try{window.close()}catch(e){}},1200)</script>' : ''}
+</body></html>`;
+}
+
+async function browserLoopbackLogin() {
+  const codeVerifier = crypto.randomBytes(48).toString('base64url');
+  const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+  const state = crypto.randomBytes(16).toString('hex');
+
+  let resolveCode;
+  let rejectCode;
+  const codePromise = new Promise((resolve, reject) => {
+    resolveCode = resolve;
+    rejectCode = reject;
+  });
+
+  const { server, port } = await listenLoopback((req, res) => {
+    try {
+      const reqUrl = new URL(req.url || '/', `http://localhost:${port}`);
+      if (reqUrl.pathname === '/favicon.ico') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+      const err = reqUrl.searchParams.get('error');
+      const code = reqUrl.searchParams.get('code');
+      const returnedState = reqUrl.searchParams.get('state');
+      if (err) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(callbackHtml(false, err));
+        rejectCode(new Error(tr('errLoginIncomplete')));
+        return;
+      }
+      if (!code || returnedState !== state) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(callbackHtml(false));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(callbackHtml(true));
+      resolveCode(code);
+    } catch (error) {
+      rejectCode(error);
+    }
+  });
+
+  const redirectUri = `http://localhost:${port}/`;
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
+    response_type: 'code',
+    client_id: OAUTH_CLIENT_ID,
+    redirect_uri: redirectUri,
+    scope: OAUTH_SCOPES,
+    state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
+    access_type: 'offline',
+    prompt: 'select_account',
+  }).toString()}`;
+
+  const timer = setTimeout(() => {
+    rejectCode(new Error(tr('errGcloudTimeout')));
+  }, 180000);
+
+  try {
+    await openExternalBrowser(authUrl);
+    const code = await codePromise;
+    const response = await httpFetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: OAUTH_CLIENT_ID,
+        client_secret: OAUTH_CLIENT_SECRET,
+        code,
+        code_verifier: codeVerifier,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri,
+      }).toString(),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.access_token) {
+      throw new Error(data.error_description || data.error || tr('errNoAccessToken'));
+    }
+    const seconds = Number(data.expires_in) || 3600;
+    return {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token || '',
+      expiresAt: Date.now() + Math.max(30, seconds - 15) * 1000,
+    };
+  } finally {
+    clearTimeout(timer);
+    try { server.close(); } catch { /* ignore */ }
+  }
+}
+
+async function beginLogin(settings) {
   const projectId = String(settings.projectId || '').trim();
   if (!projectId) throw new Error(tr('errNeedProject'));
   if (pending) throw new Error(tr('errLoginPending'));
   pending = true;
+  const alreadySignedIn = Boolean(session && Date.now() < session.expiresAt);
   try {
-    let printed = await printAccessToken(hooks);
-    if (!printed.ok) {
-      const login = await runGcloud(['auth', 'login', '--brief'], {
-        timeoutMs: 180000,
-        allowPrompt: true,
-        onProgress: hooks?.onProgress,
-      });
-      if (login.code !== 0) throw new Error(needsLogin(login.stderr) ? tr('errLoginIncomplete') : safeError(login.stderr));
-      printed = await printAccessToken(hooks);
+    if (!alreadySignedIn && session?.refreshToken) {
+      const refreshed = await refreshAccessToken(session.refreshToken);
+      if (refreshed) {
+        session = {
+          accessToken: refreshed.accessToken,
+          refreshToken: refreshed.refreshToken,
+          expiresAt: refreshed.expiresAt,
+          projectId,
+          source: 'gcloud',
+        };
+        expired = false;
+        writeSession();
+        return sessionStatus();
+      }
     }
-    if (!printed.ok) throw new Error(printed.message || tr('errNoAccessToken'));
+
+    if (!alreadySignedIn) {
+      const quickToken = await tryQuickGcloudToken();
+      if (quickToken) {
+        session = {
+          accessToken: quickToken,
+          refreshToken: '',
+          expiresAt: await expiryFromToken(quickToken),
+          projectId,
+          source: 'gcloud',
+        };
+        expired = false;
+        writeSession();
+        return sessionStatus();
+      }
+    }
+
+    const oauthResult = await browserLoopbackLogin();
     session = {
-      accessToken: printed.value,
-      expiresAt: await expiryFromToken(printed.value),
+      accessToken: oauthResult.accessToken,
+      refreshToken: oauthResult.refreshToken,
+      expiresAt: oauthResult.expiresAt,
       projectId,
       source: 'gcloud',
     };
@@ -319,6 +640,7 @@ async function beginLogin(settings, hooks) {
 
 module.exports = {
   accessToken,
+  ensureAccessToken,
   alignSession,
   beginLogin,
   bundledGcloudPath,
@@ -328,4 +650,5 @@ module.exports = {
   launchEnv,
   pythonReleaseSupported,
   sessionStatus,
+  setBrowserOpener,
 };
