@@ -108,8 +108,6 @@ function throwIfAborted(signal) {
   if (signal?.aborted) throw abortError();
 }
 
-const FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.0-flash'];
-
 async function getToken(settings) {
   const token = (await ensureAccessToken(settings)) || accessToken(settings);
   if (!token) {
@@ -228,62 +226,26 @@ async function translateText(settings, token, text, source, signal) {
   return decodeEntities(translated);
 }
 
-function vertexUrl(settings, modelOverride, locationOverride) {
-  const location = locationOverride || settings.location || 'global';
-  const model = modelOverride || settings.model || 'gemini-3.8-flash';
+function vertexUrl(settings) {
+  const location = settings.location || 'global';
+  const model = settings.model || 'gemini-3.8-flash';
   const host = location === 'global'
     ? 'https://aiplatform.googleapis.com'
     : `https://${location}-aiplatform.googleapis.com`;
   return `${host}/v1/projects/${settings.projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
 }
 
-function modelUrl(settings, modelOverride) {
-  if (!usesApiKey(settings)) return vertexUrl(settings, modelOverride);
-  const model = encodeURIComponent(modelOverride || settings.model || 'gemini-3.8-flash');
+function modelUrl(settings) {
+  if (!usesApiKey(settings)) return vertexUrl(settings);
+  const model = encodeURIComponent(settings.model || 'gemini-3.8-flash');
   return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 }
 
-function candidateModels(settings) {
-  const primary = String(settings?.model || '').trim() || FALLBACK_MODELS[0];
-  const models = [primary];
-  for (const fallback of FALLBACK_MODELS) {
-    if (!models.includes(fallback)) models.push(fallback);
-  }
-  return models;
-}
-
-function modelNotFoundError(error) {
-  const msg = String(error?.message || '');
-  return error?.status === 404
-    || (error?.status === 400 && /not found|not supported|unsupported model|unknown model|invalid model|Publisher Model/i.test(msg));
-}
-
-async function postModel(settings, token, body, signal) {
-  const models = candidateModels(settings);
-  let lastError = null;
+function postModel(settings, token, body, signal) {
   if (usesApiKey(settings)) {
-    for (const model of models) {
-      try {
-        return await postJson(modelUrl(settings, model), '', '', body, signal, settings.geminiApiKey);
-      } catch (error) {
-        if (error.name === 'AbortError') throw error;
-        lastError = error;
-        if (!modelNotFoundError(error)) throw error;
-      }
-    }
-    throw lastError;
+    return postJson(modelUrl(settings), '', '', body, signal, settings.geminiApiKey);
   }
-
-  for (const model of models) {
-    try {
-      return await postJson(vertexUrl(settings, model), token, settings.projectId, body, signal);
-    } catch (error) {
-      if (error.name === 'AbortError') throw error;
-      lastError = error;
-      if (!modelNotFoundError(error)) throw error;
-    }
-  }
-  throw lastError;
+  return postJson(vertexUrl(settings), token, settings.projectId, body, signal);
 }
 
 function dictionaryPrompt(text, lang, settings) {
@@ -494,14 +456,9 @@ async function translateOrFallback(settings, token, text, source, signal) {
     const translation = await translateText(settings, token, text, source, signal);
     return { translation, translationEngine: 'cloud-translation' };
   } catch (error) {
-    if (error.name === 'AbortError') throw error;
-    try {
-      const translation = await geminiTranslate(settings, token, text, source, signal);
-      return { translation, translationEngine: 'gemini' };
-    } catch (fallbackError) {
-      if (fallbackError.name === 'AbortError') throw fallbackError;
-      throw error;
-    }
+    if (!translationDisabled(error)) throw error;
+    const translation = await geminiTranslate(settings, token, text, source, signal);
+    return { translation, translationEngine: 'gemini' };
   }
 }
 
@@ -645,17 +602,6 @@ async function lookup(text, settings, { signal, onProgress } = {}) {
     }
     throwIfAborted(signal);
     translation = firstGloss(dictionary);
-    if (!translation) {
-      try {
-        translation = await geminiTranslate(scoped, token, clipped.text, lang, signal);
-        if (dictionary && (!dictionary.entries || dictionary.entries.length === 0)) {
-          dictionary.note = '';
-        }
-      } catch (fallbackError) {
-        if (fallbackError.name === 'AbortError') throw fallbackError;
-        if (!dictionaryError) dictionaryError = fallbackError;
-      }
-    }
     if (!translation && !dictionary) {
       throw dictionaryError || new Error(tr('errNoResult'));
     }
@@ -692,23 +638,14 @@ async function lookup(text, settings, { signal, onProgress } = {}) {
     throwIfAborted(signal);
     dictionary = defined.dictionary || null;
     dictionaryError = defined.dictionaryError || null;
-    translationEngine = cloudTranslation ? 'cloud-translation' : 'gemini';
-    if (!translation) {
-      translation = firstGloss(dictionary);
-    }
-    if (!translation) {
-      try {
-        translation = await geminiTranslate(scoped, token, clipped.text, lang, signal);
-        if (dictionary && (!dictionary.entries || dictionary.entries.length === 0)) {
-          dictionary.note = '';
-        }
-      } catch (fallbackError) {
-        if (fallbackError.name === 'AbortError') throw fallbackError;
+    if (!translation && translated.translationError) {
+      if (translationDisabled(translated.translationError)) {
+        translation = firstGloss(dictionary);
+        translationEngine = 'gemini';
+      } else {
+        translationNote = explainGcpError(translated.translationError).message;
+        translation = firstGloss(dictionary);
       }
-    }
-    if (!translation && translated.translationError && !translationDisabled(translated.translationError)) {
-      translationNote = explainGcpError(translated.translationError).message;
-      translationEngine = 'cloud-translation';
     }
     if (translation && !cloudTranslation && canSpeak(targetLanguage)) {
       translationReadingPromise = pronounce(scoped, token, translation, targetLanguage, signal);
@@ -758,7 +695,10 @@ async function testConnection(settings, signal) {
     await translateText(probe, token, 'hello', 'en', signal);
     translationReady = true;
   } catch (error) {
-    if (error.name === 'AbortError') throw error;
+    if (!translationDisabled(error)) {
+      error.phase = 'translation';
+      throw error;
+    }
   }
   try {
     await defineWord(probe, token, 'hello', 'en', signal);

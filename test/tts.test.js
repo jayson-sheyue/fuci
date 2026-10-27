@@ -192,7 +192,7 @@ test('OAuth PKCE loopback login opens browser immediately and exchanges code for
   }
 });
 
-test('Full mode avoids x-goog-user-project 403 and falls back when Cloud Translation or primary model fails', async () => {
+test('Full mode avoids sending x-goog-user-project when project ID is in URL path and uses exact configured model', async () => {
   const fs = require('node:fs');
   const os = require('node:os');
   const path = require('node:path');
@@ -218,18 +218,9 @@ test('Full mode avoids x-goog-user-project 403 and falls back when Cloud Transla
 
       if (url.includes('translation.googleapis.com')) {
         return {
-          ok: false,
-          status: 403,
-          statusText: 'Forbidden',
-          json: async () => ({ error: { message: 'Permission cloudtranslate.generalModels.predict denied' } }),
-        };
-      }
-      if (url.includes('gemini-3.8-flash')) {
-        return {
-          ok: false,
-          status: 404,
-          statusText: 'Not Found',
-          json: async () => ({ error: { message: 'Publisher Model gemini-3.8-flash was not found' } }),
+          ok: true,
+          status: 200,
+          json: async () => ({ translations: [{ translatedText: 'Hello world today the weather is great' }] }),
         };
       }
       return {
@@ -238,7 +229,7 @@ test('Full mode avoids x-goog-user-project 403 and falls back when Cloud Transla
         json: async () => ({
           candidates: [{
             content: {
-              parts: [{ text: 'Hello world' }],
+              parts: [{ text: JSON.stringify({ tokens: [{ text: '你好世界', reading: 'nǐ hǎo shì jiè', translation: 'Hello world' }] }) }],
             },
           }],
         }),
@@ -253,8 +244,8 @@ test('Full mode avoids x-goog-user-project 403 and falls back when Cloud Transla
       location: 'global',
     });
     assert.equal(res.kind, 'sentence');
-    assert.equal(res.translation, 'Hello world');
-    assert.ok(calls.some((c) => c.url.includes('gemini-2.5-flash')));
+    assert.equal(res.translation, 'Hello world today the weather is great');
+    assert.ok(calls.every((c) => !c.url.includes('aiplatform.googleapis.com') || c.url.includes('gemini-3.8-flash')));
   } finally {
     configureSession('');
     clearCache();
@@ -262,14 +253,17 @@ test('Full mode avoids x-goog-user-project 403 and falls back when Cloud Transla
   }
 });
 
-test('Lite mode translates scrambled Chinese even when dictionary entries are empty', async () => {
+test('Lite mode dictionaryPrompt instructs Gemini to reconstruct scrambled Chinese into entries without extra hidden calls', async () => {
   const { lookup, clearCache } = require('../src/main/gcp');
   clearCache();
 
+  let callCount = 0;
   setFetchImplementation(async (_url, options) => {
+    callCount += 1;
     const body = JSON.parse(options.body);
     const promptText = body.contents?.[0]?.parts?.[0]?.text || '';
     if (promptText.includes('为词典卡片编写一个词条')) {
+      assert.match(promptText, /如果输入是语序打乱的文字/);
       return {
         ok: true,
         status: 200,
@@ -280,10 +274,23 @@ test('Lite mode translates scrambled Chinese even when dictionary entries are em
                 text: JSON.stringify({
                   headword: '果苹吃',
                   phonetic: 'guǒ píng chī',
-                  lemma: '',
-                  note: '这不是一个真实存在的中文词，无法翻译。',
+                  lemma: '吃苹果',
+                  note: '按「吃苹果」还原翻译。',
                   inflections: [],
-                  entries: [],
+                  entries: [
+                    {
+                      pos: 'v.',
+                      posZh: '动词短语',
+                      senses: [
+                        {
+                          glossZh: 'eat apples',
+                          glossMono: '吃苹果',
+                          glossReading: '',
+                          examples: [],
+                        },
+                      ],
+                    },
+                  ],
                 }),
               }],
             },
@@ -297,7 +304,7 @@ test('Lite mode translates scrambled Chinese even when dictionary entries are em
       json: async () => ({
         candidates: [{
           content: {
-            parts: [{ text: 'eat apples' }],
+            parts: [{ text: '/iːt ˈæpəlz/' }],
           },
         }],
       }),
@@ -310,5 +317,5 @@ test('Lite mode translates scrambled Chinese even when dictionary entries are em
     pair: 'zh-en',
   });
   assert.equal(res.translation, 'eat apples');
-  assert.equal(res.dictionary?.note || '', '');
+  assert.equal(callCount, 3); // 1 defineWord + target IPA readings (no hidden geminiTranslate)
 });

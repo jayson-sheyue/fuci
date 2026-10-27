@@ -158,35 +158,6 @@ async function synthesizeOnce(settings, token, text, lang, model, signal) {
   throw Object.assign(new Error(tr('errSpeechFail')), { status: 502 });
 }
 
-async function synthesizeVertexOnce(settings, token, text, lang, model, signal) {
-  const location = settings.location || 'global';
-  const host = location === 'global'
-    ? 'https://aiplatform.googleapis.com'
-    : `https://${location}-aiplatform.googleapis.com`;
-  const url = `${host}/v1/projects/${settings.projectId}/locations/${location}/publishers/google/models/${encodeURIComponent(model)}:generateContent`;
-  const response = await httpFetch(url, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json; charset=utf-8',
-    },
-    body: JSON.stringify(geminiSpeechRequest(text, lang)),
-    signal,
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(data.error?.message || response.statusText || tr('errSpeechFail'));
-    error.status = response.status;
-    throw error;
-  }
-  const parts = data.candidates?.[0]?.content?.parts || [];
-  const inline = parts.find((part) => part?.inlineData?.data)?.inlineData;
-  if (!inline?.data) {
-    throw Object.assign(new Error(tr('errNoAudio')), { status: 502 });
-  }
-  return ensureDecodableAudio(inline.data, inline.mimeType);
-}
-
 async function synthesizeGeminiOnce(apiKey, text, lang, model, signal) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const response = await httpFetch(url, {
@@ -253,12 +224,6 @@ async function synthesize(text, lang, settings, signal) {
   }
   const token = (await ensureAccessToken(settings)) || accessToken(settings);
   if (!token) {
-    if (String(settings?.geminiApiKey || '').trim()) {
-      const audio = await synthesizeWithGeminiKey(settings, value, lang, signal);
-      cache.set(key, audio);
-      if (cache.size > 30) cache.delete(cache.keys().next().value);
-      return audio;
-    }
     const error = new Error('TOKEN_EXPIRED');
     error.status = 401;
     throw error;
@@ -275,27 +240,6 @@ async function synthesize(text, lang, settings, signal) {
       if (error.name === 'AbortError') throw error;
       lastError = error;
       if (!unsupportedModel(error)) break;
-    }
-  }
-  for (const vertexModel of geminiSpeechModels(settings)) {
-    try {
-      const audio = await synthesizeVertexOnce(settings, token, value, lang, vertexModel, signal);
-      cache.set(key, audio);
-      if (cache.size > 30) cache.delete(cache.keys().next().value);
-      return audio;
-    } catch (vertexError) {
-      if (vertexError.name === 'AbortError') throw vertexError;
-      if (!unsupportedModel(vertexError)) break;
-    }
-  }
-  if (String(settings?.geminiApiKey || '').trim()) {
-    try {
-      const audio = await synthesizeWithGeminiKey(settings, value, lang, signal);
-      cache.set(key, audio);
-      if (cache.size > 30) cache.delete(cache.keys().next().value);
-      return audio;
-    } catch (fallbackError) {
-      if (fallbackError.name === 'AbortError') throw fallbackError;
     }
   }
   throw lastError;
