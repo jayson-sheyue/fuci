@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[クイックスタート ↓](#ステップバイステップ導入ガイド)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.0/fuci-1.4.0-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.0/fuci-1.4.0-win-x64.zip)**
+> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[クイックスタート ↓](#ステップバイステップ導入ガイド)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-win-x64.zip)**
 >
 > **中文** — 查一个词，不该离开正在读的这一页。**[阅读中文说明 →](README.md)**
 >
@@ -69,10 +69,10 @@
 
 ### ステップ 1：ダウンロードとインストール
 
-[GitHub Releases ページ](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.0) からお使いの OS 向けパッケージをダウンロードします：
+[GitHub Releases ページ](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.1) からお使いの OS 向けパッケージをダウンロードします：
 
 #### 🍎 macOS（Apple シリコン M1 / M2 / M3 / M4、`arm64`）
-1. **[fuci-1.4.0-arm64.dmg をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.0/fuci-1.4.0-arm64.dmg)**
+1. **[fuci-1.4.1-arm64.dmg をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-arm64.dmg)**
 2. ダウンロードした `.dmg` を開き、**「浮词」** を **「アプリケーション（Applications）」** フォルダへドラッグします。
 3. **初回起動時の注意（macOS の未公証アプリの開き方）**：
    ブラウザからダウンロードしたアプリは Apple の公証（Notarization）を受けていないため、初回起動時に `“浮词” Not Opened（“浮词”は開かれませんでした）` と表示されることがあります。その場合は **Done（完了）** を押し（*Move to Trash / ゴミ箱に入れる* は押さないでください）、次のいずれかの方法で開いてください：
@@ -84,7 +84,7 @@
    - **方法 B（システム設定から開く）**：Done を押したあと、Mac の「システム設定 → プライバシーとセキュリティ」を開き、下部の「セキュリティ」欄にある **「このまま開く（Open Anyway）」** をクリックします。
 
 #### 🪟 Windows（Windows 10 / 11 64 ビット、`x64` ポータブル版）
-1. **[fuci-1.4.0-win-x64.zip をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.0/fuci-1.4.0-win-x64.zip)**
+1. **[fuci-1.4.1-win-x64.zip をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-win-x64.zip)**
 2. `.zip` を任意のフォルダへ展開します。
 3. フォルダ内の **`Fuci.exe`** をダブルクリックして起動します（Windows SmartScreen の確認が出た場合は「詳細情報 → 実行」をクリックしてください。下の **AI Studio 軽量モード** と組み合わせると 1 分ですぐ使い始められます）。
 
@@ -131,9 +131,9 @@ Google Cloud のプロジェクト作成や請求設定を行わずに、すぐ�
    > ```
 3. **アカウントの IAM ロールを確認**
    - プロジェクトの作成者（`Owner`）アカウントでログインする場合はそのままステップ 4 へ進めます。
-   - 別のアカウントを使う場合は、[IAM 画面](https://console.cloud.google.com/iam-admin/iam) でログイン用 Google アカウントに次のロールを付与してください（`Cloud Translation API User` が無い場合も、全文翻訳は自動で Gemini にフォールバックします）：
+   - 別のアカウントを使う場合は、[IAM 画面](https://console.cloud.google.com/iam-admin/iam) でログイン用 Google アカウントに次の 2 つのロールを付与してください：
      - **Agent Platform User**（旧 **Vertex AI User**、`roles/aiplatform.user`）
-     - **Cloud Translation API User**（`roles/cloudtranslate.user`、推奨）
+     - **Cloud Translation API User**（`roles/cloudtranslate.user`）
 4. **浮词で「ワンクリックで接続」**
    - **浮词** の歯車アイコン `⚙` → **「検索アカウント」** を開きます。
    - **「GCP フルモード」** に **プロジェクト ID** を入力し、`Location` は `global` のままにします。
