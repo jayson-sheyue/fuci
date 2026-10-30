@@ -602,14 +602,14 @@ rt {
 
 .translation.long { font-size: 18px; font-weight: 500; }
 
-.forms, .tokens {
+.forms {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
 }
 
-.form, .token {
+.form {
   min-width: 76px;
   max-width: 100%;
   padding: 8px 10px;
@@ -617,7 +617,7 @@ rt {
   background: var(--help-bg);
 }
 
-.form span, .form i, .token i, .token span {
+.form span, .form i {
   display: block;
   color: var(--muted);
   font-size: 11px;
@@ -625,11 +625,102 @@ rt {
   line-height: 1.35;
 }
 
-.form b, .token b {
+.form b {
   display: block;
   margin-top: 2px;
   font-size: 15px;
   font-weight: 600;
+}
+
+.chunks { margin-top: 16px; }
+
+.chunks-label {
+  margin: 0;
+  color: var(--faint);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.chunks-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.chunk {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0 10px 16px;
+}
+
+.chunk::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 17px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.chunk::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 25px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--line);
+}
+
+.chunk:last-child::after { content: none; }
+
+.chunk-src { min-width: 0; flex: 1.15; }
+
+.chunk-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.chunk b {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.chunk em {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--help-bg);
+  color: var(--muted);
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.chunk i {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.chunk-tr {
+  flex: 0.85;
+  min-width: 0;
+  margin: 1px 0 0;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .form .speak { margin-top: 4px; }

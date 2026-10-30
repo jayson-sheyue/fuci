@@ -21,17 +21,25 @@ function sanitizeInflections(raw) {
   return forms;
 }
 
+const CHUNK_UNITS = new Set(['word', 'phrase', 'clause']);
+
+function sanitizeUnit(value) {
+  const unit = String(value || '').trim().toLowerCase();
+  return CHUNK_UNITS.has(unit) ? unit : '';
+}
+
 function sanitizeTokens(raw) {
   const tokens = [];
   const source = Array.isArray(raw?.tokens) ? raw.tokens : [];
   for (const item of source) {
     if (!item || typeof item !== 'object') continue;
-    const text = clean(item.text, 40);
+    const text = clean(item.text, 320);
     if (!text) continue;
     tokens.push({
       text,
-      reading: clean(item.reading, 80),
-      translation: clean(item.translation, 40),
+      reading: clean(item.reading, 400),
+      translation: clean(item.translation, 180),
+      unit: sanitizeUnit(item.unit),
     });
   }
   return tokens;

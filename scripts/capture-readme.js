@@ -4,11 +4,12 @@ const { app, BrowserWindow } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
-const shots = [
+const allShots = [
   'bar', 'word', 'sentence', 'word-ja', 'orb', 'settings', 'account', 'look',
   'en-bar', 'en-zh-word', 'en-ja-word', 'en-sentence', 'en-ui-word', 'en-orb', 'en-settings', 'en-account', 'en-look',
   'ja-bar', 'ja-zh-word', 'ja-en-word', 'ja-sentence', 'ja-orb', 'ja-settings', 'ja-account', 'ja-look',
 ];
+const shots = process.argv.slice(2).length ? process.argv.slice(2) : allShots;
 
 function shotPath(dir, shot) {
   if (shot.startsWith('en-')) return path.join(dir, 'en', `${shot.slice(3)}.png`);

@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **中文** — 查一个词，不该离开正在读的这一页。**[快速上手 ↓](#保姆级上手教程)** · **[macOS 下载 (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-arm64.dmg)** · **[Windows 下载 (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-win-x64.zip)**
+> **中文** — 查一个词，不该离开正在读的这一页。**[快速上手 ↓](#保姆级上手教程)** · **[macOS 下载 (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-arm64.dmg)** · **[Windows 下载 (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-win-x64.zip)**
 >
 > **English** — One word should not make you leave the page. **[Read in English →](README.en.md)**
 >
@@ -18,12 +18,12 @@
 
 - **单词与句子自动分流，各有最合适的版式**
   - **查单词**：展开成结构化词典卡片——提供精准译文、音标/假名/拼音、**词形变化（比较级、动词时态、日语活用形）**、词性、双语+母语释义、双语例句与发音朗读。
-  - **查句子**：不铺成冗长词条，只给**整句译文、整句读音（音标/假名/拼音）以及逐词释义拆解**，长句结构一目了然。
+  - **查句子**：不铺成冗长词条，只给**整句译文、整句读音（音标/假名/拼音）以及按自然停顿切开的单词、词组或短句**，读的时候能看见该在哪里断。
 - **中 · 日 · 英三语互译，界面语言与翻译方向彼此独立**
   - 支持 `英↔中`、`日↔中`、`英↔日` 六个方向一键循环切换；日语汉字自带振假名（Ruby 注音）；中文译文支持**简体 / 繁体**随时切换。
 - **两种接入模式自由选择，零门槛或满血体验兼顾**
   - **AI Studio 轻量模式（推荐新手，1 分钟即用）**：只需在 [Google AI Studio](https://aistudio.google.com/apikey) 免费创建一个 `Gemini API Key` 填入即可。**无需开通 GCP 项目、无需绑定信用卡结算、无需安装 `gcloud`，也没有每小时重新登录的烦恼。**
-  - **GCP 满血模式（进阶完整体验）**：结合 `Cloud Translation API`（极速译文）、`Vertex AI Gemini`（深度词条与逐词解析）与 `Cloud Text-to-Speech`（自然语音朗读）。两种凭证可在设置里并存，顶部一键切换路由。
+  - **GCP 满血模式（进阶完整体验）**：结合 `Cloud Translation API`（极速译文）、`Vertex AI Gemini`（深度词条与断句）与 `Cloud Text-to-Speech`（自然语音朗读）。两种凭证可在设置里并存，顶部一键切换路由。
 - **本机极速缓存，隐私安全**
   - 查过的完整单词和句子会自动记在这台 Mac 上（保留最近约 400 条）。同一页里再遇到同一个词，直接秒开，不用再等网络请求。所有项目 ID、API Key、登录令牌与查词缓存**仅保存在你的 Mac 本机**。
 
@@ -39,7 +39,7 @@
 
 ![单词卡片](docs/word.png)
 
-查**句子**不铺成词条，只留整句译文、整句音标或拼音，以及句中每个词的读音与释义。
+查**句子**不铺成词条，只留整句译文、整句音标或拼音，以及按意群切开的原文。每一段是一个单词、词组或短句，旁边是这一段在句中的意思。
 
 ![句子卡片](docs/sentence.png)
 
@@ -73,10 +73,10 @@
 
 ### 第一步：下载与安装
 
-在 [GitHub Releases 发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.1) 选择对应系统的最新安装包：
+在 [GitHub Releases 发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.2) 选择对应系统的最新安装包：
 
 #### 🍎 macOS（Apple 芯片 M1 / M2 / M3 / M4，`arm64`）
-1. **[点击下载 fuci-1.4.1-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-arm64.dmg)**
+1. **[点击下载 fuci-1.4.2-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-arm64.dmg)**
 2. 双击打开下载好的 `.dmg` 文件，将 **「浮词」** 拖进 **「应用程序（Applications）」** 文件夹。
 3. **首次打开必看（解决 macOS 未公证弹窗）**：
    从浏览器下载的开源安装包没有苹果商业公证。第一次打开如果弹出 `“浮词” Not Opened（未打开“浮词”）`，请先点 **Done（完成）**（**切勿**点 Move to Trash / 移到废纸篓），然后任选以下一种方式解除限制：
@@ -88,7 +88,7 @@
    - **方式 B（系统设置点选）**：点 Done 之后，打开 Mac「系统设置 → 隐私与安全性」，滑到下方「安全性」一栏，点击 **「仍要打开（Open Anyway）」**。
 
 #### 🪟 Windows（Windows 10 / 11 64 位，`x64` 免安装绿色版）
-1. **[点击下载 fuci-1.4.1-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-win-x64.zip)**
+1. **[点击下载 fuci-1.4.2-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-win-x64.zip)**
 2. 将压缩包完整解压到任意目录（如 `D:\Apps\Fuci-win32-x64`）。
 3. 双击目录中的 **`Fuci.exe`** 即可直接启动（若弹出 Windows SmartScreen 提示，点击「更多信息 → 仍要运行」即可；建议搭配下方的 **AI Studio 轻量模式** 使用，开箱即用）。
 
@@ -103,7 +103,7 @@
 | **配置耗时** | **约 1 分钟** | 约 5 分钟 |
 | **前置要求** | 仅需普通 Google 账号 | 需已开通结算（Billing）的 Google Cloud 项目 |
 | **登录方式** | 粘贴一次 `API Key` 即可，**长期有效** | 点击「一键链接」浏览器授权，令牌每次有效约 **1 小时** |
-| **查词与查句能力** | 完整支持（译文、词条、逐词拆解全部走 Gemini） | 完整支持（译文优先走 Cloud Translation，词条走 Vertex AI Gemini） |
+| **查词与查句能力** | 完整支持（译文、词条、断句全部走 Gemini） | 完整支持（译文优先走 Cloud Translation，词条和断句走 Vertex AI Gemini） |
 | **语音朗读（小喇叭）** | 支持（通过 AI Studio Gemini TTS 朗读） | 支持（通过 Cloud Text-to-Speech 朗读） |
 
 #### 路线 1：1 分钟极速上手 —— AI Studio 轻量模式（无需 GCP 项目）

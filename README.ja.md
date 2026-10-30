@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[クイックスタート ↓](#ステップバイステップ導入ガイド)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-win-x64.zip)**
+> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[クイックスタート ↓](#ステップバイステップ導入ガイド)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-win-x64.zip)**
 >
 > **中文** — 查一个词，不该离开正在读的这一页。**[阅读中文说明 →](README.md)**
 >
@@ -18,12 +18,12 @@
 
 - **単語と文を自動判別し、それぞれに最適なレイアウトで表示**
   - **単語を引く**：構造化された辞書カードが開きます。訳語、読み（発音記号・ふりがな・ピンイン）、**語形変化・活用形（比較級、動詞の時制、日本語の辞書形／ます形／て形）**、品詞、二言語＋母語での語釈、例文、音声読み上げを備えています。
-  - **文を引く**：単語カードにはせず、**全文の訳、全文の読み、そして重要な語ごとの短い意味（逐語解説）**だけをすっきり表示します。
+  - **文を引く**：単語カードにはせず、**全文の訳、全文の読み、そして自然な区切り（単語・語句・短文）**だけをすっきり表示します。どこで切って読めばよいかが見えます。
 - **中国語・日本語・英語の相互翻訳（表示言語と翻訳方向は独立）**
   - `英→中`、`英→日`、`日→中`、`日→英`、`中→英`、`中→日` の 6 方向をワンクリックで切り替え可能。日本語の漢字には自動でふりがな（ルビ）が振られ、中国語は**簡体字／繁体字**をいつでも切り替えられます。
 - **選べる 2 つの接続モード（1 分で使える AI Studio Key ／ フル機能の GCP）**
   - **AI Studio 軽量モード（初心者におすすめ・1 分で導入完了）**：[Google AI Studio](https://aistudio.google.com/apikey) で無料発行できる `Gemini API Key` を貼り付けるだけ。**GCP プロジェクトの作成も、請求設定（クレジットカード登録）も、`gcloud` の導入も、1 時間ごとの再ログインも不要です。**
-  - **GCP フルモード（Google Cloud 利用者向け）**：`Cloud Translation API`（高速翻訳）、`Vertex AI Gemini`（詳細な辞書カード・逐語解説）、`Cloud Text-to-Speech`（自然な音声読み上げ）を組み合わせて動作します。両方の認証情報を設定に並べて保存し、「検索ルート（自動／フル／軽量）」でいつでも切り替えられます。
+  - **GCP フルモード（Google Cloud 利用者向け）**：`Cloud Translation API`（高速翻訳）、`Vertex AI Gemini`（詳細な辞書カードと区切り）、`Cloud Text-to-Speech`（自然な音声読み上げ）を組み合わせて動作します。両方の認証情報を設定に並べて保存し、「検索ルート（自動／フル／軽量）」でいつでも切り替えられます。
 - **高速なローカルキャッシュと安心のプライバシー**
   - 引き終わった単語や文はこの Mac に最大約 400 件キャッシュされます。同じページで再び出てきた単語はネットワーク待ちなしで即座に開きます。プロジェクト ID、API Key、トークン、検索キャッシュは**すべてお使いの Mac 内にのみ保存されます**。
 
@@ -43,7 +43,7 @@
 
 ![英語から日本語](docs/ja/en-word.png)
 
-**文**は単語カードにはなりません。全文の日本語訳、英語の発音記号、そして語ごとの読みと意味だけが表示されます。
+**文**は単語カードにはなりません。全文の日本語訳、英語の発音記号、そして原文を単語・語句・短文に切った区切りと、それぞれの意味だけが表示されます。
 
 ![英語の文から日本語](docs/ja/sentence.png)
 
@@ -69,10 +69,10 @@
 
 ### ステップ 1：ダウンロードとインストール
 
-[GitHub Releases ページ](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.1) からお使いの OS 向けパッケージをダウンロードします：
+[GitHub Releases ページ](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.2) からお使いの OS 向けパッケージをダウンロードします：
 
 #### 🍎 macOS（Apple シリコン M1 / M2 / M3 / M4、`arm64`）
-1. **[fuci-1.4.1-arm64.dmg をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-arm64.dmg)**
+1. **[fuci-1.4.2-arm64.dmg をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-arm64.dmg)**
 2. ダウンロードした `.dmg` を開き、**「浮词」** を **「アプリケーション（Applications）」** フォルダへドラッグします。
 3. **初回起動時の注意（macOS の未公証アプリの開き方）**：
    ブラウザからダウンロードしたアプリは Apple の公証（Notarization）を受けていないため、初回起動時に `“浮词” Not Opened（“浮词”は開かれませんでした）` と表示されることがあります。その場合は **Done（完了）** を押し（*Move to Trash / ゴミ箱に入れる* は押さないでください）、次のいずれかの方法で開いてください：
@@ -84,7 +84,7 @@
    - **方法 B（システム設定から開く）**：Done を押したあと、Mac の「システム設定 → プライバシーとセキュリティ」を開き、下部の「セキュリティ」欄にある **「このまま開く（Open Anyway）」** をクリックします。
 
 #### 🪟 Windows（Windows 10 / 11 64 ビット、`x64` ポータブル版）
-1. **[fuci-1.4.1-win-x64.zip をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-win-x64.zip)**
+1. **[fuci-1.4.2-win-x64.zip をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-win-x64.zip)**
 2. `.zip` を任意のフォルダへ展開します。
 3. フォルダ内の **`Fuci.exe`** をダブルクリックして起動します（Windows SmartScreen の確認が出た場合は「詳細情報 → 実行」をクリックしてください。下の **AI Studio 軽量モード** と組み合わせると 1 分ですぐ使い始められます）。
 
@@ -99,7 +99,7 @@
 | **所要時間** | **約 1 分** | 約 5 分 |
 | **必要なもの** | 通常の Google アカウントのみ | 請求（Billing）が有効な Google Cloud プロジェクト |
 | **ログイン方法** | `Gemini API Key` を一度貼るだけ（**1 時間ごとの期限切れなし**） | 「ワンクリックで接続」でブラウザ認証（トークン有効期限は**約 1 時間**） |
-| **単語・文の検索** | すべて対応（訳文・語釈・逐語解説をすべて Gemini で生成） | すべて対応（Cloud Translation で高速翻訳 ＋ Vertex AI Gemini で語釈生成） |
+| **単語・文の検索** | すべて対応（訳文・語釈・区切りをすべて Gemini で生成） | すべて対応（Cloud Translation で高速翻訳 ＋ Vertex AI Gemini で語釈と区切りを生成） |
 | **音声読み上げ（スピーカー）** | 対応（AI Studio Gemini TTS を使用） | 対応（Cloud Text-to-Speech を使用） |
 
 #### 方法 1：1 分で完了 —— AI Studio 軽量モード（GCP プロジェクト不要）

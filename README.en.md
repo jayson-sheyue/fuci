@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **English** — One word should not make you leave the page. **[Quick Start ↓](#step-by-step-setup-guide)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-win-x64.zip)**
+> **English** — One word should not make you leave the page. **[Quick Start ↓](#step-by-step-setup-guide)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-win-x64.zip)**
 >
 > **中文** — 查一个词，不该离开正在读的这一页。**[阅读中文说明 →](README.md)**
 >
@@ -18,12 +18,12 @@ You are mid-page in an article, paper, or documentation, and one unfamiliar word
 
 - **Smart Word vs. Sentence Split**
   - **Look up a word**: Opens into a structured dictionary card with translation, pronunciation (IPA / kana / pinyin), **word inflections & conjugations** (comparatives, verb tenses, Japanese verb forms), part of speech, bilingual + same-language glosses, example sentences, and audio pronunciation.
-  - **Look up a sentence**: Stays a clean sentence card — full translation, a full-sentence pronunciation line, and **word-by-word glosses** for every key token instead of a cluttered dictionary dump.
+  - **Look up a sentence**: Stays a clean sentence card — full translation, a full-sentence pronunciation line, and a **phrasing breakdown** into words, phrases, or short clauses, so you can see where the sentence breaks.
 - **Three-Way Translation (Chinese ↔ Japanese ↔ English)**
   - Cycle effortlessly through `EN→ZH`, `EN→JA`, `JA→ZH`, `JA→EN`, `ZH→EN`, and `ZH→JA`. Interface language (`English` / `中文` / `日本語`) is completely independent from your translation direction, and Chinese output supports both **Simplified** and **Traditional** scripts.
 - **Two Flexible Setup Modes (1-Minute AI Studio Key or Full GCP)**
   - **AI Studio Lite Mode (Recommended for most users — 1-minute setup)**: Paste a free `Gemini API Key` from [Google AI Studio](https://aistudio.google.com/apikey). **No GCP project, no billing setup, no `gcloud` CLI, and no hourly sign-in expiration.**
-  - **GCP Full Mode (For Google Cloud users)**: Combines `Cloud Translation API` (instant translations), `Vertex AI Gemini` (dictionary entries & token glosses), and `Cloud Text-to-Speech` (natural audio pronunciation). Both credentials can stay saved side by side in Settings with a one-click route switch (`Auto / Full / Lite`).
+  - **GCP Full Mode (For Google Cloud users)**: Combines `Cloud Translation API` (instant translations), `Vertex AI Gemini` (dictionary entries and phrasing), and `Cloud Text-to-Speech` (natural audio pronunciation). Both credentials can stay saved side by side in Settings with a one-click route switch (`Auto / Full / Lite`).
 - **Instant Local Cache & Local-First Privacy**
   - Completed word and sentence lookups are cached locally on your Mac (up to ~400 recent entries). When the same word appears again on the page, it opens instantly without waiting on the network. Your project ID, API key, tokens, and cache **never leave your Mac**.
 
@@ -43,7 +43,7 @@ A **Japanese word** does the same with furigana ruby annotations above kanji and
 
 ![Japanese into English](docs/en/ja-word.png)
 
-A **sentence** stays a sentence: you get the full English translation, a full pronunciation line, and a word-by-word breakdown for every token.
+A **sentence** stays a sentence: you get the full English translation, a full pronunciation line, and the original split into words, phrases, or short clauses, each with its meaning in context.
 
 ![Chinese sentence into English](docs/en/sentence.png)
 
@@ -69,10 +69,10 @@ Inside **Lookup account**, **GCP full mode** and **AI Studio lite mode** sit sid
 
 ### Step 1: Download & Install
 
-Download the latest release for your platform from the [GitHub Releases page](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.1):
+Download the latest release for your platform from the [GitHub Releases page](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.2):
 
 #### 🍎 macOS (Apple Silicon M1 / M2 / M3 / M4, `arm64`)
-1. **[Download fuci-1.4.1-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-arm64.dmg)**
+1. **[Download fuci-1.4.2-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-arm64.dmg)**
 2. Open the downloaded `.dmg` file and drag **浮词** into your **Applications** folder.
 3. **First Launch on macOS (Bypassing the Unnotarized App Prompt)**:
    Because this open-source app is not notarized by Apple, macOS may show a `“浮词” Not Opened` dialog on first launch. Click **Done** (do **not** click *Move to Trash*), then use either method below:
@@ -84,7 +84,7 @@ Download the latest release for your platform from the [GitHub Releases page](ht
    - **Method B (System Settings)**: After clicking **Done**, open **System Settings → Privacy & Security**, scroll down to the **Security** section, and click **Open Anyway**.
 
 #### 🪟 Windows (Windows 10 / 11 64-bit, `x64` Portable)
-1. **[Download fuci-1.4.1-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.1/fuci-1.4.1-win-x64.zip)**
+1. **[Download fuci-1.4.2-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-win-x64.zip)**
 2. Extract the `.zip` archive to any folder (e.g. `D:\Apps\Fuci-win32-x64`).
 3. Double-click **`Fuci.exe`** to launch (if Windows SmartScreen prompts, click **More info → Run anyway**; pairing with **AI Studio Lite Mode** below gives an instant zero-dependency setup).
 
@@ -99,7 +99,7 @@ This repository does not bundle any pre-configured project ID, account, or API k
 | **Setup Time** | **~1 minute** | ~5 minutes |
 | **Prerequisites** | Any standard Google account | A Google Cloud project with Billing enabled |
 | **Authentication** | Paste a `Gemini API Key` once (**never expires hourly**) | Click **Connect** for browser OAuth (~**1-hour** token, click to renew) |
-| **Word & Sentence Lookups** | Full support (Translations, entries & token glosses via Gemini) | Full support (Translations via Cloud Translation + entries via Vertex AI Gemini) |
+| **Word & Sentence Lookups** | Full support (translations, entries, and phrasing via Gemini) | Full support (translations via Cloud Translation; entries and phrasing via Vertex AI Gemini) |
 | **Audio Pronunciation (Speaker)** | Supported (via AI Studio Gemini TTS) | Supported (via Cloud Text-to-Speech) |
 
 #### Path 1: 1-Minute Quick Start — AI Studio Lite Mode (No GCP Project Needed)

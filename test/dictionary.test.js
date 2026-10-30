@@ -80,7 +80,7 @@ test('English and Japanese readings stay on the card', () => {
   assert.equal(result.entries[0].senses[0].examples[0].reading, '/aɪ rʌn ˈdeɪli/');
 });
 
-test('word cards keep inflection forms and sentences keep a token breakdown', () => {
+test('word cards keep inflection forms and sentences keep phrasing chunks', () => {
   const card = sanitizeDictionary({
     headword: 'run',
     phonetic: '/rʌn/',
@@ -96,12 +96,18 @@ test('word cards keep inflection forms and sentences keep a token breakdown', ()
 
   const tokens = sanitizeTokens({
     tokens: [
-      { text: 'run', reading: '/rʌn/', translation: '跑' },
+      { text: 'a little more slowly?', reading: '/ə ˈlɪtl mɔː ˈsləʊli/', translation: '再慢一点', unit: 'phrase' },
+      { text: 'run', reading: '/rʌn/', translation: '跑', unit: 'WORD' },
+      { text: 'today', reading: '', translation: '今天', unit: 'sentence' },
       { text: '', reading: '', translation: '' },
     ],
   });
-  assert.equal(tokens.length, 1);
-  assert.equal(tokens[0].translation, '跑');
+  assert.equal(tokens.length, 3);
+  assert.equal(tokens[0].text, 'a little more slowly?');
+  assert.equal(tokens[0].translation, '再慢一点');
+  assert.equal(tokens[0].unit, 'phrase');
+  assert.equal(tokens[1].unit, 'word');
+  assert.equal(tokens[2].unit, '');
 
   const many = sanitizeTokens({
     tokens: Array.from({ length: 40 }, (_, index) => ({

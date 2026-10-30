@@ -60,6 +60,15 @@ test('lookup cache survives restart and skips the network', async () => {
     assert.equal(numbers.translation, '数字');
     assert.equal(numbers.query, '12345');
 
+    lookupCache.put(settings, 'sentence', 'en', 'Could you speak a little more slowly?', {
+      kind: 'sentence',
+      translation: '能说得再慢一点吗？',
+      tokens: [{ text: 'Could you speak', unit: 'phrase', translation: '你能不能说' }],
+    });
+    const sentence = lookupCache.read(settings, 'sentence', 'en', 'Could you speak a little more slowly?');
+    assert.equal(sentence.tokens[0].unit, 'phrase');
+    assert.equal(lookupCache.read(settings, 'word', 'en', 'Could you speak a little more slowly?'), null);
+
     lookupCache.clear();
     assert.equal(lookupCache.read(settings, 'word', 'en', 'apple'), null);
     assert.equal(fs.readFileSync(path.join(dir, 'lookup-cache.json'), 'utf8').includes('apple'), false);

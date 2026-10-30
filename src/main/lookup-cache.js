@@ -28,8 +28,10 @@ function cacheScope(settings) {
 
 function entryKey(settings, kind, lang, text) {
   const normalized = lang === 'en' ? text.toLowerCase() : text;
+  const parts = [...scopeParts(settings), kind, lang, normalized];
+  if (kind === 'sentence') parts.push('chunks');
   return {
-    key: JSON.stringify([...scopeParts(settings), kind, lang, normalized]),
+    key: JSON.stringify(parts),
     normalized,
   };
 }

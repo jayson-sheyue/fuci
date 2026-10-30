@@ -468,12 +468,19 @@ function remember(settings, kind, lang, text, value) {
 
 async function analyzeSentence(settings, token, text, lang, signal) {
   const gloss = langName(pairEnds(settings).target, settings);
+  const from = langName(lang, settings);
   const prompt = [
-    '把句子拆成逐词释义，保持原句顺序，每个词都要出现，不要停在句子中途。',
-    '中文按词拆开，不要按字。英语按单词，保留冠词和助动词。日语按词，助词单独成项。',
-    `每个词的 translation 用${gloss}写一个简短释义。`,
-    'reading：英语用一行国际音标；日语用假名，含汉字时写成漢字(かな)；中文用带声调的拼音。没有读音就留空字符串。',
-    '只返回 JSON：{"tokens":[{"text":"","reading":"","translation":""}]}',
+    `按${from}读者会停下来理解的意群切开下面的句子，让人看得出这句话该在哪里断。`,
+    '每一段只取一种：一个单词（unit 为 word）、一个词组（phrase），或一个短句（clause）。哪一种最像自然停顿，就用哪一种。',
+    '不要逐词硬拆。冠词、助动词、系动词和日语助词留在它所依附的意群里，不要单独成段。',
+    '固定说法、短语动词、数量短语和专名不要拆开。标点留在它所属的那一段末尾。',
+    '保持原句顺序。各段 text 必须是原文里连续出现的字，按顺序接起来能还原原句，不要漏词、改写或停在中途。',
+    '一句里有多处停顿时不要收成一整段，也不要拆到每一个语法词。',
+    '参考切法，不要照抄："Could you speak a little more slowly?" 分成 "Could you speak" 和 "a little more slowly?"。"今天的会议改到三点。" 分成 "今天的会议" 和 "改到三点。"。"私は駅で友達を待っています。" 分成 "私は"、"駅で"、"友達を"、"待っています。"。',
+    `translation 用${gloss}写这一段在句中的意思，短一些，不要复述整句译文。`,
+    `reading 是这一段的读音。${readingRule(lang)}。没有就留空字符串。`,
+    'unit 只能是 word、phrase 或 clause。',
+    '只返回 JSON：{"tokens":[{"text":"","reading":"","translation":"","unit":"phrase"}]}',
     `句子：${JSON.stringify(text)}`,
   ].join('\n');
   const schema = {
@@ -487,6 +494,7 @@ async function analyzeSentence(settings, token, text, lang, signal) {
             text: { type: 'string' },
             reading: { type: 'string' },
             translation: { type: 'string' },
+            unit: { type: 'string' },
           },
           required: ['text', 'reading', 'translation'],
         },

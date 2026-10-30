@@ -229,15 +229,37 @@ function formsHtml(forms, lang) {
   `).join('')}</div>`;
 }
 
-function tokensHtml(tokens) {
+function unitLabel(unit) {
+  if (unit === 'word') return t('unitWord');
+  if (unit === 'phrase') return t('unitPhrase');
+  if (unit === 'clause') return t('unitClause');
+  return '';
+}
+
+function tokensHtml(tokens, lang) {
   if (!tokens?.length) return '';
-  return `<div class="tokens">${tokens.map((token) => `
-    <div class="token">
-      <b>${esc(token.text)}</b>
-      ${token.reading ? `<i>${esc(token.reading)}</i>` : ''}
-      ${token.translation ? `<span>${esc(token.translation)}</span>` : ''}
-    </div>
-  `).join('')}</div>`;
+  const rows = tokens.map((token) => {
+    const parts = annotationParts(token.text, token.reading, lang);
+    const unit = unitLabel(token.unit);
+    return `
+      <li class="chunk">
+        <div class="chunk-src">
+          <div class="chunk-main">
+            <b>${parts.html}</b>
+            ${unit ? `<em>${esc(unit)}</em>` : ''}
+          </div>
+          ${parts.phonetic ? `<i>${parts.phonetic}</i>` : ''}
+        </div>
+        ${token.translation ? `<p class="chunk-tr">${esc(token.translation)}</p>` : ''}
+      </li>
+    `;
+  }).join('');
+  return `
+    <section class="chunks" aria-label="${esc(t('chunks'))}">
+      <p class="chunks-label">${esc(t('chunks'))}</p>
+      <ol class="chunks-list">${rows}</ol>
+    </section>
+  `;
 }
 
 function footerText(result) {
@@ -432,7 +454,7 @@ function renderResult(result) {
         </div>
         <button type="button" class="copy" data-copy="${esc(result.translation)}">${esc(t('copy'))}</button>
       </div>
-      ${tokensHtml(result.tokens)}
+      ${tokensHtml(result.tokens, result.sourceLanguage)}
       ${truncated}
       ${result.translationNote ? `<p class="pending">${esc(result.translationNote)}</p>` : ''}
       <p class="foot">${footerText(result)}</p>
@@ -1388,10 +1410,8 @@ function sampleSentence() {
     reading: '/kʊd ju spiːk ə ˈlɪtl mɔː ˈsləʊli/',
     translationReading: 'néng shuō de zài màn yì diǎn ma',
     tokens: [
-      { text: 'Could', reading: '/kʊd/', translation: '能够' },
-      { text: 'you', reading: '/ju/', translation: '你' },
-      { text: 'speak', reading: '/spiːk/', translation: '说' },
-      { text: 'slowly', reading: '/ˈsləʊli/', translation: '慢地' },
+      { text: 'Could you speak', reading: '/kʊd ju spiːk/', translation: '你能不能说', unit: 'phrase' },
+      { text: 'a little more slowly?', reading: '/ə ˈlɪtl mɔː ˈsləʊli/', translation: '再慢一点', unit: 'phrase' },
     ],
   };
 }
@@ -1585,10 +1605,8 @@ function sampleZhEnSentence() {
     reading: 'jīn tiān de huì yì gǎi dào sān diǎn',
     translationReading: '/təˈdeɪz ˈmiːtɪŋ həz bɪn muːvd tə θriː/',
     tokens: [
-      { text: '今天', reading: 'jīn tiān', translation: 'today' },
-      { text: '会议', reading: 'huì yì', translation: 'meeting' },
-      { text: '改到', reading: 'gǎi dào', translation: 'moved to' },
-      { text: '三点', reading: 'sān diǎn', translation: "three o'clock" },
+      { text: '今天的会议', reading: 'jīn tiān de huì yì', translation: "today's meeting", unit: 'phrase' },
+      { text: '改到三点。', reading: 'gǎi dào sān diǎn', translation: 'moved to three', unit: 'clause' },
     ],
   };
 }
@@ -1603,10 +1621,8 @@ function sampleEnJaSentence() {
     reading: '/ðə ˈkɒfi hɪər ɪz ə ˈlɪtl strɒŋ/',
     translationReading: 'ここのコーヒーは少(すこ)し濃(こ)いです。',
     tokens: [
-      { text: 'coffee', reading: '/ˈkɒfi/', translation: 'コーヒー' },
-      { text: 'here', reading: '/hɪər/', translation: 'ここ' },
-      { text: 'a little', reading: '/ə ˈlɪtl/', translation: '少し' },
-      { text: 'strong', reading: '/strɒŋ/', translation: '濃い' },
+      { text: 'The coffee here', reading: '/ðə ˈkɒfi hɪər/', translation: 'ここのコーヒーは', unit: 'phrase' },
+      { text: 'is a little strong.', reading: '/ɪz ə ˈlɪtl strɒŋ/', translation: '少し濃いです', unit: 'clause' },
     ],
   };
 }
