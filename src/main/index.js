@@ -29,6 +29,7 @@ setFetchImplementation((url, options = {}) => net.fetch(url, {
   headers: options.headers,
   body: options.body,
   signal: options.signal,
+  redirect: options.redirect,
 }));
 
 app.setName(IS_WIN ? 'Fuci' : '浮词');
