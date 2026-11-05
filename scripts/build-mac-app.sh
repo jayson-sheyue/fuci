@@ -101,10 +101,12 @@ fi
 echo "正在签名"
 codesign --force --deep --sign - --entitlements "$ENTITLEMENTS" "$DIST_APP"
 
-rm -rf "$DESKTOP_APP"
-ditto "$DIST_APP" "$DESKTOP_APP"
-codesign --force --deep --sign - --entitlements "$ENTITLEMENTS" "$DESKTOP_APP"
-xattr -cr "$DESKTOP_APP" || true
+# Allow verification builds without replacing the user's desktop installation.
+if [[ "${FUCI_STAGE_ONLY:-0}" != "1" ]]; then
+  rm -rf "$DESKTOP_APP"
+  ditto "$DIST_APP" "$DESKTOP_APP"
+  codesign --force --deep --sign - --entitlements "$ENTITLEMENTS" "$DESKTOP_APP"
+fi
 
 DMG="$ROOT/dist/fuci-${VERSION}-arm64.dmg"
 STAGE="$(mktemp -d)"

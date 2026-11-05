@@ -6,6 +6,7 @@ const { accessToken, ensureAccessToken } = require('./oauth');
 const { firstGloss, sanitizeDictionary, sanitizeTokens } = require('./dictionary');
 const { explainGcpError } = require('./errors');
 const lookupCache = require('./lookup-cache');
+const geminiGateway = require('./gemini-gateway');
 const { usesApiKey } = require('./settings');
 const { tr } = require('../renderer/i18n');
 
@@ -136,6 +137,7 @@ async function postJsonOnce(url, token, projectId, body, signal, apiKey, include
       headers,
       body: JSON.stringify(body),
       signal,
+      redirect: 'error',
     });
   } catch (error) {
     if (error.name === 'AbortError') throw error;
@@ -145,7 +147,7 @@ async function postJsonOnce(url, token, projectId, body, signal, apiKey, include
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(data.error?.message || response.statusText || tr('errRequest'));
+    const error = new Error(String(data.error?.message || response.statusText || tr('errRequest')).split(apiKey || '\0').join('[redacted]'));
     error.status = response.status;
     throw error;
   }
@@ -237,8 +239,7 @@ function vertexUrl(settings) {
 
 function modelUrl(settings) {
   if (!usesApiKey(settings)) return vertexUrl(settings);
-  const model = encodeURIComponent(settings.model || 'gemini-3.8-flash');
-  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  return geminiGateway.endpoint(settings.model || 'gemini-3.8-flash', settings.geminiProvider);
 }
 
 function postModel(settings, token, body, signal) {

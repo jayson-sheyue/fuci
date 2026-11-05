@@ -1,0 +1,17 @@
+const {_electron}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+(async()=>{
+ const root=path.resolve(__dirname,'..'),dir=fs.mkdtempSync(path.join(os.tmpdir(),'fuci-gateway-ui-'));let app;
+ const entry=path.join(dir,'test-entry.cjs');fs.writeFileSync(entry,`const {app}=require('electron');app.setName('FuciGatewayTest');app.setPath('userData',${JSON.stringify(dir)});global.__gatewayHttp=require(${JSON.stringify(path.join(root,'src/main/http.js'))});require(${JSON.stringify(path.join(root,'src/main/index.js'))});`);
+ async function launch(){const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;app=await _electron.launch({executablePath:require('electron'),args:[entry],env});const page=await app.firstWindow();await page.waitForFunction(()=>!!window.fuci);return page;}
+ try{
+  let page=await launch();const boot=await page.evaluate(()=>window.fuci.bootstrap());const settings={...boot.settings,projectId:'',route:'gemini',geminiProvider:'vertex-express',geminiApiKey:'AQ.synthetic.desktop-verification',model:'models/gemini-test',ttsModel:'test-tts',openAtLogin:false,uiLocale:'en'};
+  const saved=await page.evaluate(s=>window.fuci.saveSettings(s),settings);assert(saved.ok,saved.message);assert.equal(saved.settings.geminiProvider,'vertex-express');assert.equal(saved.settings.model,'gemini-test');
+  await app.evaluate(()=>{global.__gatewayRequests=[];global.__gatewayHttp.setFetchImplementation(async(url,options)=>{const body=JSON.parse(options.body);global.__gatewayRequests.push({url,body});return {ok:true,status:200,json:async()=>({candidates:[{content:{parts:[{text:'你好'}]}}]})};});});
+  const probe=await page.evaluate(s=>window.fuci.testSettings(s),{...settings,model:'gemini-test'});assert(probe.ok,probe.message);const req=await app.evaluate(()=>global.__gatewayRequests[0]);assert(req.url.includes('aiplatform.googleapis.com/v1beta1/'));assert.equal(req.body.contents[0].role,'user');
+  await app.close();app=null;page=await launch();const reopened=await page.evaluate(()=>window.fuci.bootstrap());assert.equal(reopened.settings.geminiProvider,'vertex-express');assert.equal(reopened.settings.geminiApiKey,'AQ.synthetic.desktop-verification');
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].webContents.send('open-settings'));await page.locator('[data-open-page=account]').click();await page.locator('#gemini-provider').waitFor();assert.equal(await page.locator('#gemini-provider').inputValue(),'vertex-express');assert.equal(await page.locator('#gemini-api-key').getAttribute('type'),'password');
+  fs.mkdirSync(path.join(root,'dist/gateway-verification'),{recursive:true});await page.screenshot({path:path.join(root,'dist/gateway-verification/settings.png')});
+  await page.locator('#gemini-provider').selectOption('gemini');await page.locator('#close-settings').click();const changed=await page.evaluate(()=>window.fuci.bootstrap());assert.equal(changed.settings.geminiProvider,'gemini');assert.equal(changed.settings.geminiApiKey,'AQ.synthetic.desktop-verification');
+  console.log('PASS: actual Fuci IPC, AQ save, explicit Express text routing, settings source UI, password field and source/key persistence across restart. Isolated profile and controlled response; no real API call.');
+ }finally{if(app)await app.close();fs.rmSync(dir,{recursive:true,force:true});}
+})().catch(e=>{console.error(e);process.exitCode=1;});

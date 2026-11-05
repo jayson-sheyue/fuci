@@ -177,3 +177,12 @@ npm run pack:win
 ```
 
 > **Electron のインストールに失敗する場合**：会社のプロキシ証明書などが Node のダウンロードを止めている場合は、システムの `curl` で `electron-vバージョン-darwin-arm64.zip` を取得して `node_modules/electron/dist` に展開し、`node_modules/electron/path.txt` の内容を `Electron.app/Contents/MacOS/Electron` にしてください。
+
+
+## AI Studio と Vertex Express の API キー
+
+設定 → アカウント → API Key 軽量モードで、キーを発行した AI Studio または Vertex AI Express を選択します。`AIza…` とドットを含む認証キーに対応し、接頭辞だけではサービスを切り替えません。既存の設定は AI Studio を維持します。辞書と TTS は選択したサービスに `x-goog-api-key` ヘッダーと明示的な user ロールで送信します。Express はグローバルな `v1beta1/publishers/google/models` を使用し、GCP プロジェクト／OAuth モードは別の経路です。
+
+モデル、地域、割り当て、料金はサービスとアカウントに依存します。テキスト接続の成功は TTS の動作保証ではありません。既存の TTS 予備モデルは選択したサービス内でのみ試します。`npm test` で形式、経路、AUDIO/role、キャッシュ分離、エラー秘匿を確認できますが、実際の AQ キーによるオンライン動作は未検証です。[公式キーガイド](https://aistudio.google.com/docs/api-key) · [Express REST](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/express-mode/api-reference)。
+
+`FUCI_STAGE_ONLY=1 npm run pack` builds the macOS verification package without replacing the Desktop app. `NODE_PATH=/path/to/playwright/node_modules node test/gemini-gateway.desktop.cjs` runs the isolated desktop gateway check.

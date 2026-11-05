@@ -717,7 +717,10 @@ function openSettings(message, page = 'home') {
       <div class="setup-block">
         <p class="mode-title">${esc(t('modeKeyTitle'))}</p>
         <label class="field"><span>${esc(t('geminiKey'))}</span>
-          <input id="gemini-api-key" type="password" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="AIza..." value="${esc(settings.geminiApiKey || '')}" />
+          <input id="gemini-api-key" type="password" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="AIza… / AQ.…" value="${esc(settings.geminiApiKey || '')}" />
+        </label>
+        <label class="field"><span>${esc(t('geminiProvider'))}</span>
+          <select id="gemini-provider"><option value="gemini" ${settings.geminiProvider !== 'vertex-express' ? 'selected' : ''}>Google AI Studio · Gemini API</option><option value="vertex-express" ${settings.geminiProvider === 'vertex-express' ? 'selected' : ''}>Vertex AI Express</option></select>
         </label>
         <p class="ui-hint">${esc(t('geminiKeyHint'))}</p>
         <div class="auth-row">
@@ -1079,6 +1082,7 @@ function readSettingsForm() {
   return {
     projectId: fieldValue('project-id').trim(),
     geminiApiKey: fieldValue('gemini-api-key').trim(),
+    geminiProvider: fieldValue('gemini-provider') || 'gemini',
     route: document.querySelector('.route-choice.is-selected')?.getAttribute('data-route') || 'auto',
     target: fieldValue('target'),
     model: fieldValue('model').trim(),

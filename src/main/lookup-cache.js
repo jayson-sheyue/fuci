@@ -19,6 +19,7 @@ function scopeParts(settings) {
     settings.model || '',
     settings.location || '',
     settings.engine || 'gcp',
+    ...(settings.geminiProvider === 'vertex-express' ? ['vertex-express'] : []),
   ];
 }
 

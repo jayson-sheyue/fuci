@@ -177,3 +177,12 @@ npm run pack:win
 ```
 
 > **Troubleshooting Electron Install**: If `npm install` or `npm start` reports that Electron failed to install (often caused by corporate SSL proxies blocking Node downloads), use system `curl` to download `electron-v<version>-darwin-arm64.zip`, unzip it into `node_modules/electron/dist`, and write `Electron.app/Contents/MacOS/Electron` into `node_modules/electron/path.txt`.
+
+
+## AI Studio and Vertex Express keys
+
+In Settings → Account → API key lite mode, select the service that issued the key: AI Studio or Vertex AI Express. Both `AIza…` and dotted authorization keys are accepted; prefixes do not select a gateway. Existing settings keep AI Studio. Dictionary and TTS requests use the selected service with an `x-goog-api-key` header and explicit user roles. Express uses the global `v1beta1/publishers/google/models` endpoint. GCP project/OAuth mode remains separate.
+
+Model access, regions, quotas and billing depend on the service and account. Passing the text check does not verify TTS. Existing TTS model fallbacks stay within the selected service. `npm test` covers both formats and gateways, AUDIO/role, cache separation and redacted errors; live AQ text/TTS calls have not been verified. [Official key guide](https://aistudio.google.com/docs/api-key) · [Express REST](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/express-mode/api-reference).
+
+`FUCI_STAGE_ONLY=1 npm run pack` builds the macOS verification package without replacing the Desktop app. `NODE_PATH=/path/to/playwright/node_modules node test/gemini-gateway.desktop.cjs` runs the isolated desktop gateway check.

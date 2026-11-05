@@ -19,5 +19,6 @@ test('credential and API setup failures point back to settings', () => {
 
   const key = explainGcpError({ status: 400, message: 'API key not valid. Please pass a valid API key.' });
   assert.equal(key.needsSetup, true);
-  assert.match(key.message, /AI Studio API Key/);
+  assert.match(key.message, /密钥来源/);
+  assert.match(key.message, /权限/);
 });

@@ -8,6 +8,7 @@ const { lookup, testConnection, clearAuth, configureLookupCache, flushLookupCach
 const { checkForUpdate, applyUpdate } = require('./update');
 const { normalizePair } = require('./classify');
 const { synthesize } = require('./tts');
+const geminiGateway = require('./gemini-gateway');
 
 const IS_WIN = process.platform === 'win32';
 const IS_MAC = process.platform === 'darwin';
@@ -311,6 +312,7 @@ function currentSettings() {
     ...stored,
     engine,
     route: normalizeRoute(stored.route),
+    geminiProvider: geminiGateway.provider(stored.geminiProvider),
     geminiApiKey: String(stored.geminiApiKey || '').trim(),
     projectId: engine === 'gemini' ? '' : effectiveProjectId(stored),
   };
@@ -335,11 +337,12 @@ function normalizeForm(input) {
   if (/\s/.test(projectId)) throw new Error(tr('errProjectSpace'));
   if (!/^[a-z0-9-]{1,40}$/i.test(location)) throw new Error(tr('errLocation'));
   const route = normalizeRoute(input?.route);
-  return { projectId, geminiApiKey, location, model, ttsModel, route, oauthClientId: '', oauthClientSecret: '', target, openAtLogin, panelOpacity, theme, uiLocale };
+  const geminiProvider = geminiGateway.provider(input?.geminiProvider);
+  return { projectId, geminiApiKey, geminiProvider, location, model, ttsModel, route, oauthClientId: '', oauthClientSecret: '', target, openAtLogin, panelOpacity, theme, uiLocale };
 }
 
 function modelId(value, fallback) {
-  const model = String(value || fallback).trim() || fallback;
+  const model = String(value || fallback).trim().replace(/^models\//, '') || fallback;
   if (!/^[a-zA-Z0-9._-]{1,80}$/.test(model)) throw new Error(tr('errModel'));
   return model;
 }
@@ -366,6 +369,7 @@ function publicSettings(settings) {
     geminiApiKey: String(settings.geminiApiKey || '').trim(),
     engine: engineMode(settings),
     route: normalizeRoute(settings.route),
+    geminiProvider: geminiGateway.provider(settings.geminiProvider),
     location: settings.location || 'global',
     model: settings.model || 'gemini-3.8-flash',
     ttsModel: settings.ttsModel || 'gemini-3.1-flash-tts-preview',

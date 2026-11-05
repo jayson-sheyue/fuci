@@ -13,6 +13,7 @@ function normalizeTheme(value) {
 const DEFAULTS = {
   projectId: '',
   geminiApiKey: '',
+  geminiProvider: 'gemini',
   keyFile: '',
   oauthClientId: '',
   oauthClientSecret: '',
@@ -111,7 +112,7 @@ function usesApiKey(settings) {
 function validateGeminiKey(value) {
   const apiKey = String(value ?? '').trim();
   if (!apiKey) return '';
-  if (/\s/.test(apiKey) || apiKey.length > 200 || !/^[A-Za-z0-9_-]+$/.test(apiKey)) {
+  if (/\s/.test(apiKey) || apiKey.length > 4096 || !/^[A-Za-z0-9._-]+$/.test(apiKey)) {
     throw Object.assign(new Error('BAD_GEMINI_KEY'), { code: 'BAD_GEMINI_KEY' });
   }
   return apiKey;

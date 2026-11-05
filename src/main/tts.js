@@ -3,6 +3,7 @@
 const { httpFetch } = require('./http');
 const { accessToken, ensureAccessToken } = require('./oauth');
 const { usesApiKey } = require('./settings');
+const geminiGateway = require('./gemini-gateway');
 const { tr } = require('../renderer/i18n');
 
 const TTS_MODELS = ['gemini-3.1-flash-tts-preview', 'gemini-2.5-pro-tts'];
@@ -62,6 +63,7 @@ function geminiSpeechRequest(text, lang) {
   return {
     contents: [
       {
+        role: 'user',
         parts: [{ text: prompt }],
       },
     ],
@@ -158,8 +160,8 @@ async function synthesizeOnce(settings, token, text, lang, model, signal) {
   throw Object.assign(new Error(tr('errSpeechFail')), { status: 502 });
 }
 
-async function synthesizeGeminiOnce(apiKey, text, lang, model, signal) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+async function synthesizeGeminiOnce(apiKey, text, lang, model, signal, provider) {
+  const url = geminiGateway.endpoint(model, provider);
   const response = await httpFetch(url, {
     method: 'POST',
     headers: {
@@ -167,11 +169,12 @@ async function synthesizeGeminiOnce(apiKey, text, lang, model, signal) {
       'x-goog-api-key': apiKey,
     },
     body: JSON.stringify(geminiSpeechRequest(text, lang)),
+    redirect: 'error',
     signal,
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(data.error?.message || response.statusText || tr('errSpeechFail'));
+    const error = new Error(String(data.error?.message || response.statusText || tr('errSpeechFail')).split(apiKey).join('[redacted]'));
     error.status = response.status;
     throw error;
   }
@@ -192,7 +195,7 @@ async function synthesizeWithGeminiKey(settings, value, lang, signal) {
   let lastError = null;
   for (const model of models) {
     try {
-      return await synthesizeGeminiOnce(apiKey, value, lang, model, signal);
+      return await synthesizeGeminiOnce(apiKey, value, lang, model, signal, settings.geminiProvider);
     } catch (error) {
       if (error.name === 'AbortError') throw error;
       lastError = error;
@@ -209,7 +212,7 @@ async function synthesize(text, lang, settings, signal) {
   }
   const useKey = usesApiKey(settings);
   const models = useKey ? geminiSpeechModels(settings) : speechModels(settings);
-  const key = `${useKey ? 'gemini' : 'gcp'}\n${models[0]}\n${lang}\n${value}`;
+  const key = `${useKey ? geminiGateway.provider(settings.geminiProvider) : 'gcp'}\n${models[0]}\n${lang}\n${value}`;
   if (cache.has(key)) return cache.get(key);
 
   if (useKey) {

@@ -183,3 +183,16 @@ npm run pack:win
 ```
 
 > **排障提示**：如果执行 `npm install` 或 `npm start` 时提示 Electron 没有安装成功，通常是公司网络证书拦截了 Node 的二进制下载。可改用系统自带的 `curl` 下载对应版本的 `electron-v版本号-darwin-arm64.zip`，解压到 `node_modules/electron/dist`，并让 `node_modules/electron/path.txt` 的内容为 `Electron.app/Contents/MacOS/Electron`。
+
+
+## AI Studio 与 Vertex Express API Key
+
+在「设置 → 查词账号 → API Key 轻量模式」选择密钥来源：AI Studio 或 Vertex AI Express。支持旧式 `AIza…` 和带点的新式授权密钥；前缀不能可靠判断服务来源，不会按前缀切换或在失败后改用另一服务。旧设置默认保留 AI Studio。
+
+词典和 TTS 都使用所选服务：AI Studio 走 `generativelanguage.googleapis.com/v1beta`，Express 走 `aiplatform.googleapis.com/v1beta1/publishers/google/models`，两者均使用 `x-goog-api-key` 请求头；请求明确包含 `role: user`，TTS 保留 `AUDIO` 与 `speechConfig`。GCP 项目／OAuth 满血模式保持原有独立链路。
+
+模型开放范围、地区、权限和配额因服务与账号不同；文本检查成功不表示 TTS 可用，也不承诺免费或永久免绑卡。现有 TTS 的模型备用逻辑保留在所选服务内，不跨服务发送密钥。
+
+运行 `npm test` 可验证两种密钥格式、两种网关、TTS AUDIO／角色、缓存隔离及错误脱敏。当前未使用真实 AQ 密钥完成线上文本或语音验收；受控响应检查不代表模型在账号上已开放。官方依据：[Gemini 密钥](https://aistudio.google.com/docs/api-key)、[Express REST](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/express-mode/api-reference)、[官方 SDK 默认版本](https://github.com/googleapis/js-genai/blob/main/src/_api_client.ts)。
+
+`FUCI_STAGE_ONLY=1 npm run pack` builds the macOS verification package without replacing the Desktop app. `NODE_PATH=/path/to/playwright/node_modules node test/gemini-gateway.desktop.cjs` runs the isolated desktop gateway check.
