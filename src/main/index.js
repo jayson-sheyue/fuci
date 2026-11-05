@@ -52,6 +52,9 @@ let orbHovering = false;
 let updateState = { available: false };
 let updateTimer = null;
 
+if (process.env.NODE_ENV === 'test' && process.env.FUCI_TEST_DATA) {
+  app.setPath('userData', process.env.FUCI_TEST_DATA);
+}
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
 
