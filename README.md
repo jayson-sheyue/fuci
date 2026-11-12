@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **中文** — 查一个词，不该离开正在读的这一页。**[快速上手 ↓](#保姆级上手教程)** · **[macOS 下载 (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-arm64.dmg)** · **[Windows 下载 (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-win-x64.zip)**
+> **中文** — 查一个词，不该离开正在读的这一页。**[快速上手 ↓](#保姆级上手教程)** · **[macOS 下载 (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.4/fuci-1.4.4-arm64.dmg)** · **[Windows 下载 (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.4/fuci-1.4.4-win-x64.zip)**
 >
 > **English** — One word should not make you leave the page. **[Read in English →](README.en.md)**
 >
@@ -73,10 +73,10 @@
 
 ### 第一步：下载与安装
 
-在 [GitHub Releases 发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.2) 选择对应系统的最新安装包：
+在 [GitHub Releases 发布页](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.4) 选择对应系统的最新安装包：
 
 #### 🍎 macOS（Apple 芯片 M1 / M2 / M3 / M4，`arm64`）
-1. **[点击下载 fuci-1.4.2-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-arm64.dmg)**
+1. **[点击下载 fuci-1.4.4-arm64.dmg](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.4/fuci-1.4.4-arm64.dmg)**
 2. 双击打开下载好的 `.dmg` 文件，将 **「浮词」** 拖进 **「应用程序（Applications）」** 文件夹。
 3. **首次打开必看（解决 macOS 未公证弹窗）**：
    从浏览器下载的开源安装包没有苹果商业公证。第一次打开如果弹出 `“浮词” Not Opened（未打开“浮词”）`，请先点 **Done（完成）**（**切勿**点 Move to Trash / 移到废纸篓），然后任选以下一种方式解除限制：
@@ -88,7 +88,7 @@
    - **方式 B（系统设置点选）**：点 Done 之后，打开 Mac「系统设置 → 隐私与安全性」，滑到下方「安全性」一栏，点击 **「仍要打开（Open Anyway）」**。
 
 #### 🪟 Windows（Windows 10 / 11 64 位，`x64` 免安装绿色版）
-1. **[点击下载 fuci-1.4.2-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-win-x64.zip)**
+1. **[点击下载 fuci-1.4.4-win-x64.zip](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.4/fuci-1.4.4-win-x64.zip)**
 2. 将压缩包完整解压到任意目录（如 `D:\Apps\Fuci-win32-x64`）。
 3. 双击目录中的 **`Fuci.exe`** 即可直接启动（若弹出 Windows SmartScreen 提示，点击「更多信息 → 仍要运行」即可；建议搭配下方的 **AI Studio 轻量模式** 使用，开箱即用）。
 
@@ -152,12 +152,12 @@
 
 | 操作 | 方法 / 快捷键 |
 | :--- | :--- |
-| **呼出 / 聚焦搜索框** | 按 `⌘⇧Space` / Windows `Ctrl+Shift+Space`（若被占用则自动改用 `⌘⇧D` / `Ctrl+Shift+D`） |
+| **呼出 / 聚焦搜索框** | 按 `⌘⇧Space` / Windows `Ctrl+Shift+Space`（若被占用则自动改用 `⌘⇧D` / `Ctrl+Shift+D`），唤醒时自动回到当前桌面正中央 |
 | **开始查词 / 查句** | 输入单词或句子后按 `Enter` 回车 |
 | **切换翻译方向** | 点击搜索框右侧的方向按钮，按 `英→中`、`英→日`、`日→中`、`日→英`、`中→英`、`中→日` 顺序循环 |
 | **收起结果板 / 收成悬浮球** | 按一次 `Esc` 收起下方结果白板；再按一次 `Esc`（或双击左侧放大镜）收成桌面悬浮球 |
 | **从悬浮球展开** | 双击桌面上的悬浮球，或直接按 `⌘⇧Space` |
-| **拖动窗口位置** | 按住搜索框左侧的放大镜图标拖动，或在悬浮球状态下按住小球拖动 |
+| **拖动窗口位置** | 按住搜索框左侧放大镜直接拖动、在搜索栏任意位置长按拖动，或在悬浮球状态下按住小球拖动 |
 | **切换简繁体中文** | 打开「设置 → 外观 → 中文用字」，在「简体中文 / 繁体中文」之间切换，当前查询会自动按新字体重查 |
 | **更换查词 / 朗读模型** | 打开「设置 → 模型」，可自定义查词模型（默认 `gemini-3.8-flash`）与朗读模型（默认 `gemini-3.1-flash-tts-preview`） |
 | **检查并一键更新版本** | 当齿轮或悬浮球右上角出现**小红点**时，代表 GitHub `main` 有可快进的新版本；打开「设置」点击顶部 **「更新」** 即可无损升级，本机设置、登录状态和缓存全部保留 |

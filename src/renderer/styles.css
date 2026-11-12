@@ -251,6 +251,11 @@ button, input, select { font: inherit; color: inherit; }
   pointer-events: none;
 }
 
+.capsule.is-dragging,
+.capsule.is-dragging * {
+  cursor: grabbing !important;
+}
+
 .capsule:focus-within {
   box-shadow:
     inset 0 1px 0 var(--capsule-shine),

@@ -21,6 +21,15 @@ if (IS_WIN) {
 const { alignSession, beginLogin, configureSession, sessionStatus } = require('./oauth');
 const { setFetchImplementation } = require('./http');
 const { orbHit } = require('./orb-hit');
+const {
+  WINDOW_WIDTH,
+  ORB_WINDOW,
+  DEFAULT_BAR_HEIGHT,
+  clampBoundsToWorkArea,
+  centerBoundsInWorkArea,
+  clampDragOriginToDisplays,
+  boundsVisible,
+} = require('./window-bounds');
 const { normalizeLocale, setLocale, tr } = require('../renderer/i18n');
 const { adcExists, effectiveProjectId, engineMode, load, normalizeRoute, normalizeTheme, readGcloudProject, save, validateGeminiKey } = require('./settings');
 
@@ -34,9 +43,9 @@ setFetchImplementation((url, options = {}) => net.fetch(url, {
 
 app.setName(IS_WIN ? 'Fuci' : '浮词');
 
-const WINDOW_WIDTH = 520;
-const ORB_WINDOW = 116;
 let windowMode = 'bar';
+let lastBarHeight = DEFAULT_BAR_HEIGHT;
+let recenterOnWakeUntil = 0;
 const SHORTCUTS = [
   { accelerator: 'CommandOrControl+Shift+Space', label: IS_WIN ? 'Ctrl+Shift+Space' : '⌘⇧Space' },
   { accelerator: 'CommandOrControl+Shift+D', label: IS_WIN ? 'Ctrl+Shift+D' : '⌘⇧D' },
@@ -77,22 +86,37 @@ function maxBoardHeight() {
   return Math.max(220, Math.min(580, area.height - 180));
 }
 
-function defaultOrigin(area = activeWorkArea()) {
-  return {
-    x: Math.round(area.x + (area.width - WINDOW_WIDTH) / 2),
-    y: Math.round(area.y + area.height * 0.16),
-  };
+function defaultOrigin(area = activeWorkArea(), height = DEFAULT_BAR_HEIGHT) {
+  return centerBoundsInWorkArea(area, WINDOW_WIDTH, height);
 }
 
-function boundsVisibleInArea(bounds, area) {
-  return bounds.x < area.x + area.width - 80
-    && bounds.x + 80 > area.x
-    && bounds.y < area.y + area.height - 40
-    && bounds.y + 40 > area.y;
+function applyWindowBounds(nextBounds, animate = false) {
+  if (!win || win.isDestroyed()) return;
+  const bounds = win.getBounds();
+  if (
+    bounds.x === nextBounds.x
+    && bounds.y === nextBounds.y
+    && bounds.width === nextBounds.width
+    && bounds.height === nextBounds.height
+  ) return;
+  if (IS_WIN) win.setResizable(true);
+  win.setBounds(nextBounds, Boolean(animate && !IS_WIN));
+  if (IS_WIN) win.setResizable(false);
 }
 
-function boundsVisible(bounds) {
-  return screen.getAllDisplays().some((display) => boundsVisibleInArea(bounds, display.workArea));
+function initialBounds(savedBounds) {
+  const area = activeWorkArea();
+  if (savedBounds && boundsVisible(savedBounds, screen.getAllDisplays())) {
+    const candidate = {
+      x: Number(savedBounds.x),
+      y: Number(savedBounds.y),
+      width: WINDOW_WIDTH,
+      height: DEFAULT_BAR_HEIGHT,
+    };
+    const matched = screen.getDisplayMatching(candidate).workArea;
+    return clampBoundsToWorkArea(candidate, matched);
+  }
+  return defaultOrigin(area, DEFAULT_BAR_HEIGHT);
 }
 
 function pinWindowToAllSpaces() {
@@ -110,12 +134,12 @@ function pinWindowToAllSpaces() {
 
 function createWindow() {
   const settings = load(app.getPath('userData'));
-  const origin = settings.bounds && boundsVisible(settings.bounds) ? settings.bounds : defaultOrigin();
+  const origin = initialBounds(settings.bounds);
   win = new BrowserWindow({
     x: origin.x,
     y: origin.y,
-    width: WINDOW_WIDTH,
-    height: 96,
+    width: origin.width,
+    height: origin.height,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -157,6 +181,7 @@ function createWindow() {
   win.on('moved', () => {
     clearTimeout(moveTimer);
     moveTimer = setTimeout(() => {
+      if (!win || win.isDestroyed()) return;
       const bounds = win.getBounds();
       save(app.getPath('userData'), { bounds: { x: bounds.x, y: bounds.y } });
     }, 250);
@@ -182,14 +207,17 @@ function createWindow() {
 function showWindow() {
   if (!win || win.isDestroyed()) return;
   ignoreMouse = false;
+  draggingWindow = false;
+  orbHovering = false;
   win.setIgnoreMouseEvents(false);
   pinWindowToAllSpaces();
   const area = activeWorkArea();
-  const bounds = win.getBounds();
-  if (!boundsVisibleInArea(bounds, area)) {
-    const origin = defaultOrigin(area);
-    win.setPosition(origin.x, origin.y, false);
-  }
+  const targetHeight = windowMode === 'orb'
+    ? lastBarHeight
+    : Math.max(96, win.getBounds().height || lastBarHeight);
+  windowMode = 'bar';
+  recenterOnWakeUntil = Date.now() + 250;
+  applyWindowBounds(centerBoundsInWorkArea(area, WINDOW_WIDTH, targetHeight), false);
   win.show();
   win.focus();
   if (IS_WIN) app.focus({ steal: true });
@@ -566,20 +594,13 @@ function registerIpc() {
     if (!win || win.isDestroyed()) return;
     const bounds = win.getBounds();
     const display = screen.getDisplayMatching(bounds).workArea;
-    const nextWidth = Math.round(width);
-    const nextHeight = Math.min(Math.round(height), Math.max(96, display.height - 24));
-    let x = bounds.x;
-    let y = bounds.y;
-    if (x + nextWidth > display.x + display.width - 8) {
-      x = Math.max(display.x + 8, display.x + display.width - 8 - nextWidth);
-    }
-    if (y + nextHeight > display.y + display.height - 8) {
-      y = Math.max(display.y + 8, display.y + display.height - 8 - nextHeight);
-    }
-    if (bounds.x === x && bounds.y === y && bounds.width === nextWidth && bounds.height === nextHeight) return;
-    if (IS_WIN) win.setResizable(true);
-    win.setBounds({ x, y, width: nextWidth, height: nextHeight }, Boolean(animate && !IS_WIN));
-    if (IS_WIN) win.setResizable(false);
+    const nextBounds = clampBoundsToWorkArea({
+      x: bounds.x,
+      y: bounds.y,
+      width,
+      height,
+    }, display);
+    applyWindowBounds(nextBounds, animate);
   }
 
   ipcMain.on('window:mode', (_event, mode) => {
@@ -587,6 +608,7 @@ function registerIpc() {
     if (next === windowMode) return;
     windowMode = next;
     if (next === 'orb') {
+      recenterOnWakeUntil = 0;
       placeWindow(ORB_WINDOW, ORB_WINDOW, true);
       if (win && !win.isDestroyed() && win.isFocused()) win.blur();
     } else if (win && !win.isDestroyed() && !win.isFocused()) {
@@ -597,8 +619,15 @@ function registerIpc() {
 
   ipcMain.on('window:height', (_event, height) => {
     if (windowMode === 'orb') return;
-    const requested = Math.round(Number(height) || 96);
+    const requested = Math.round(Number(height) || DEFAULT_BAR_HEIGHT);
     const nextHeight = Math.max(requested, 80);
+    lastBarHeight = nextHeight;
+    if (!draggingWindow && recenterOnWakeUntil > Date.now()) {
+      recenterOnWakeUntil = 0;
+      applyWindowBounds(centerBoundsInWorkArea(activeWorkArea(), WINDOW_WIDTH, nextHeight), false);
+      return;
+    }
+    recenterOnWakeUntil = 0;
     placeWindow(WINDOW_WIDTH, nextHeight, false);
   });
 
@@ -642,17 +671,30 @@ function registerIpc() {
 
   ipcMain.on('window:move-by', (_event, dx, dy) => {
     if (!win || win.isDestroyed()) return;
+    recenterOnWakeUntil = 0;
     const bounds = win.getBounds();
     const dxNum = Number(dx);
     const dyNum = Number(dy);
-    win.setPosition(
-      Math.round(bounds.x + (Number.isFinite(dxNum) ? dxNum : 0)),
-      Math.round(bounds.y + (Number.isFinite(dyNum) ? dyNum : 0)),
+    const next = clampDragOriginToDisplays(
+      bounds.x + (Number.isFinite(dxNum) ? dxNum : 0),
+      bounds.y + (Number.isFinite(dyNum) ? dyNum : 0),
+      bounds.width,
+      bounds.height,
+      screen.getAllDisplays(),
     );
+    win.setPosition(next.x, next.y);
   });
 
   ipcMain.on('window:dragging', (_event, active) => {
+    const wasDragging = draggingWindow;
     draggingWindow = !!active;
+    if (draggingWindow) {
+      recenterOnWakeUntil = 0;
+    } else if (wasDragging && win && !win.isDestroyed()) {
+      const bounds = win.getBounds();
+      const display = screen.getDisplayMatching(bounds).workArea;
+      applyWindowBounds(clampBoundsToWorkArea(bounds, display), false);
+    }
     syncMousePassthrough();
   });
 

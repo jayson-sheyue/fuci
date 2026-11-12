@@ -150,7 +150,7 @@ function reportHeight() {
 
 function collapseToOrb() {
   if (orbMode) return;
-  cancelSealDrag();
+  cancelBarDrag();
   orbMode = true;
   clearTimeout(timer);
   shell.classList.add('is-orb');
@@ -1138,15 +1138,175 @@ input.addEventListener('keydown', (event) => {
   syncChrome();
 });
 
+const LONG_PRESS_DRAG_MS = 220;
+
+function suppressNextClick(root) {
+  let expire = 0;
+  const blocker = (event) => {
+    clearTimeout(expire);
+    root.removeEventListener('click', blocker, true);
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  root.addEventListener('click', blocker, true);
+  expire = setTimeout(() => {
+    root.removeEventListener('click', blocker, true);
+  }, 120);
+}
+
+function trackBarDrag(bar, enabled) {
+  let drag = null;
+
+  const arm = (fromTimer = false) => {
+    if (!drag || drag.armed) return;
+    drag.armed = true;
+    drag.fromTimer = fromTimer;
+    if (fromTimer) {
+      bar.classList.add('is-dragging');
+      if (!drag.draggingSent) {
+        drag.draggingSent = true;
+        window.fuci.setDragging(true);
+      }
+    }
+    if (document.activeElement === input) {
+      drag.selStart = input.selectionStart;
+      drag.selEnd = input.selectionEnd;
+      drag.selDir = input.selectionDirection;
+    }
+  };
+
+  const end = (event) => {
+    if (!drag) return;
+    if (event && event.pointerId !== undefined && event.pointerId !== drag.pointerId) return;
+    const current = drag;
+    drag = null;
+    clearTimeout(current.timer);
+    bar.classList.remove('is-dragging');
+    try {
+      if (bar.hasPointerCapture(current.pointerId)) bar.releasePointerCapture(current.pointerId);
+    } catch {
+      /* pointer already released */
+    }
+    if (current.draggingSent) window.fuci.setDragging(false);
+    if (current.moved) suppressNextClick(bar);
+  };
+
+  bar.addEventListener('dragstart', (event) => {
+    if (drag && (drag.armed || drag.emptyInput)) {
+      event.preventDefault();
+    }
+  });
+
+  bar.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0 || (event.buttons & 1) === 0 || !enabled()) return;
+    if (drag) end();
+    const onSeal = Boolean(event.target.closest('#seal'));
+    const onInteractive = Boolean(event.target.closest('input, button, select, textarea, a'));
+    const immediate = onSeal || !onInteractive;
+    const emptyInput = event.target === input && input.value.length === 0;
+    drag = {
+      pointerId: event.pointerId,
+      startX: event.screenX,
+      startY: event.screenY,
+      x: event.screenX,
+      y: event.screenY,
+      immediate,
+      emptyInput,
+      armed: false,
+      fromTimer: false,
+      moved: false,
+      draggingSent: false,
+      captured: false,
+      selStart: null,
+      selEnd: null,
+      selDir: null,
+      timer: 0,
+    };
+    if (immediate) {
+      arm(false);
+      try {
+        bar.setPointerCapture(event.pointerId);
+        drag.captured = true;
+      } catch {
+        /* fallback to window listener */
+      }
+      return;
+    }
+    drag.timer = setTimeout(() => arm(true), LONG_PRESS_DRAG_MS);
+  });
+
+  window.addEventListener('pointermove', (event) => {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    if ((event.buttons & 1) === 0) {
+      end(event);
+      return;
+    }
+    const totalMove = Math.hypot(event.screenX - drag.startX, event.screenY - drag.startY);
+    if (!drag.armed) {
+      if (totalMove >= 5) {
+        if (drag.emptyInput) {
+          clearTimeout(drag.timer);
+          arm(false);
+        } else {
+          end(event);
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+    const dx = event.screenX - drag.x;
+    const dy = event.screenY - drag.y;
+    if (!drag.moved) {
+      const threshold = drag.fromTimer ? 2 : 4;
+      if (totalMove < threshold && Math.hypot(dx, dy) < threshold) return;
+      drag.moved = true;
+      bar.classList.add('is-dragging');
+      if (!drag.draggingSent) {
+        drag.draggingSent = true;
+        window.fuci.setDragging(true);
+      }
+      if (!drag.captured) {
+        try {
+          bar.setPointerCapture(event.pointerId);
+          drag.captured = true;
+        } catch {
+          /* fallback to window listener */
+        }
+      }
+    }
+    event.preventDefault();
+    if (drag.selStart !== null && document.activeElement === input) {
+      try {
+        input.setSelectionRange(drag.selStart, drag.selEnd, drag.selDir || 'none');
+      } catch {
+        /* ignore selection restore errors */
+      }
+    }
+    drag.x = event.screenX;
+    drag.y = event.screenY;
+    if (dx !== 0 || dy !== 0) window.fuci.moveBy(dx, dy);
+  });
+
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+  window.addEventListener('blur', () => end());
+  return end;
+}
+
 function trackDrag(target, enabled) {
   let drag = null;
   const end = (event) => {
     if (!drag) return;
     if (event && event.pointerId !== undefined && event.pointerId !== drag.pointerId) return;
-    const pointerId = drag.pointerId;
+    const current = drag;
     drag = null;
-    if (target.hasPointerCapture(pointerId)) target.releasePointerCapture(pointerId);
-    window.fuci.setDragging(false);
+    try {
+      if (target.hasPointerCapture(current.pointerId)) target.releasePointerCapture(current.pointerId);
+    } catch {
+      /* pointer already released */
+    }
+    if (current.moved) window.fuci.setDragging(false);
   };
   target.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || (event.buttons & 1) === 0 || !enabled()) return;
@@ -1172,10 +1332,11 @@ function trackDrag(target, enabled) {
   });
   target.addEventListener('pointerup', end);
   target.addEventListener('pointercancel', end);
+  window.addEventListener('blur', () => end());
   return end;
 }
 
-const cancelSealDrag = trackDrag(seal, () => !orbMode);
+const cancelBarDrag = trackBarDrag(search, () => !orbMode);
 trackDrag(orb, () => orbMode);
 seal.addEventListener('dblclick', (event) => {
   event.preventDefault();
@@ -1233,6 +1394,7 @@ window.fuci.onProgress(({ id, result }) => {
 });
 
 window.fuci.onFocusSearch(() => {
+  cancelBarDrag();
   expandFromOrb();
   if (state.mode === 'settings') return;
   input.focus();

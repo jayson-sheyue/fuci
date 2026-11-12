@@ -1,6 +1,6 @@
 # 浮词 (Fuci)
 
-> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[クイックスタート ↓](#ステップバイステップ導入ガイド)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-win-x64.zip)**
+> **日本語** — 一つの単語のために、読んでいるページを離れたくない。**[クイックスタート ↓](#ステップバイステップ導入ガイド)** · **[macOS (.dmg)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.4/fuci-1.4.4-arm64.dmg)** · **[Windows (.zip)](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.4/fuci-1.4.4-win-x64.zip)**
 >
 > **中文** — 查一个词，不该离开正在读的这一页。**[阅读中文说明 →](README.md)**
 >
@@ -69,10 +69,10 @@
 
 ### ステップ 1：ダウンロードとインストール
 
-[GitHub Releases ページ](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.2) からお使いの OS 向けパッケージをダウンロードします：
+[GitHub Releases ページ](https://github.com/jayson-sheyue/fuci/releases/tag/v1.4.4) からお使いの OS 向けパッケージをダウンロードします：
 
 #### 🍎 macOS（Apple シリコン M1 / M2 / M3 / M4、`arm64`）
-1. **[fuci-1.4.2-arm64.dmg をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-arm64.dmg)**
+1. **[fuci-1.4.4-arm64.dmg をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.4/fuci-1.4.4-arm64.dmg)**
 2. ダウンロードした `.dmg` を開き、**「浮词」** を **「アプリケーション（Applications）」** フォルダへドラッグします。
 3. **初回起動時の注意（macOS の未公証アプリの開き方）**：
    ブラウザからダウンロードしたアプリは Apple の公証（Notarization）を受けていないため、初回起動時に `“浮词” Not Opened（“浮词”は開かれませんでした）` と表示されることがあります。その場合は **Done（完了）** を押し（*Move to Trash / ゴミ箱に入れる* は押さないでください）、次のいずれかの方法で開いてください：
@@ -84,7 +84,7 @@
    - **方法 B（システム設定から開く）**：Done を押したあと、Mac の「システム設定 → プライバシーとセキュリティ」を開き、下部の「セキュリティ」欄にある **「このまま開く（Open Anyway）」** をクリックします。
 
 #### 🪟 Windows（Windows 10 / 11 64 ビット、`x64` ポータブル版）
-1. **[fuci-1.4.2-win-x64.zip をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.2/fuci-1.4.2-win-x64.zip)**
+1. **[fuci-1.4.4-win-x64.zip をダウンロード](https://github.com/jayson-sheyue/fuci/releases/download/v1.4.4/fuci-1.4.4-win-x64.zip)**
 2. `.zip` を任意のフォルダへ展開します。
 3. フォルダ内の **`Fuci.exe`** をダブルクリックして起動します（Windows SmartScreen の確認が出た場合は「詳細情報 → 実行」をクリックしてください。下の **AI Studio 軽量モード** と組み合わせると 1 分ですぐ使い始められます）。
 
@@ -148,12 +148,12 @@ Google Cloud のプロジェクト作成や請求設定を行わずに、すぐ�
 
 | 操作 | ショートカット / 操作方法 |
 | :--- | :--- |
-| **検索欄を呼び出す** | `⌘⇧Space` / Windows は `Ctrl+Shift+Space`（競合時は自動で `⌘⇧D` / `Ctrl+Shift+D`） |
+| **検索欄を呼び出す** | `⌘⇧Space` / Windows は `Ctrl+Shift+Space`（競合時は自動で `⌘⇧D` / `Ctrl+Shift+D`）。呼び出し時は常に現在のデスクトップ中央に表示 |
 | **単語・文を引く** | 語句や文を入力して `Enter` |
 | **翻訳方向の切り替え** | 検索欄の方向ボタンを押すたびに `英→中`、`英→日`、`日→中`、`日→英`、`中→英`、`中→日` と順送り |
 | **カードを閉じる / 球にする** | `Esc` を 1 回押すと結果カードを閉じ、もう一度 `Esc`（または左の虫眼鏡をダブルクリック）で小さな球になります |
 | **球から検索欄に戻す** | 球をダブルクリック、または `⌘⇧Space` |
-| **位置の移動** | 検索欄左の虫眼鏡、または球を押さえたままドラッグ |
+| **位置の移動** | 検索欄左の虫眼鏡をドラッグ、検索欄の任意の位置を長押ししてドラッグ、または球をドラッグ |
 | **簡体字 / 繁体字の切り替え** | 「設定 → 外観 → 中国語の表記」で切り替え（現在の検索結果も新しい表記で自動的に引き直します） |
 | **検索 / 読み上げモデルの変更** | 「設定 → モデル」で検索モデル（既定 `gemini-3.8-flash`）や読み上げモデル（既定 `gemini-3.1-flash-tts-preview`）を変更可能 |
 | **アプリのワンクリック更新** | 歯車または球に**赤い点**が出たら、GitHub の `main` に新しい版があります。「設定」を開いて **「更新」** を押すと、設定・ログイン・キャッシュを保ったまま最新コードへ更新されます |
