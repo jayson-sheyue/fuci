@@ -294,6 +294,12 @@ button, input, select { font: inherit; color: inherit; }
 
 .seal:active { cursor: grabbing; }
 
+.seal svg,
+#gear svg,
+.update-dot {
+  pointer-events: none;
+}
+
 .capsule input {
   flex: 1;
   min-width: 0;

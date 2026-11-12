@@ -322,11 +322,62 @@ function triggerShowSearch() {
       `After dragging -3000px up, y (${clampedEdge.bounds.y}) must stay >= workArea.y + 8 (${clampedEdge.displayArea.y + 8})`,
     );
 
-    // 7. Collapse to orb -> move orb to corner -> wake via shortcut/showWindow -> expands AND centers on desktop!
-    await win.webContents.executeJavaScript('document.getElementById("seal").dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true }))');
-    await sleep(120);
+    // 7. Real Chromium double-click on #seal -> collapse to orb -> real double-click #orb -> expand -> real double-click #seal -> wake via shortcut!
+    const cursorForOrb = screen.getCursorScreenPoint();
+    const areaForOrb = screen.getDisplayNearestPoint(cursorForOrb).workArea;
+    const orbTestX = (cursorForOrb.x - areaForOrb.x) > areaForOrb.width / 2
+      ? areaForOrb.x + 24
+      : Math.max(areaForOrb.x + 24, areaForOrb.x + areaForOrb.width - 520 - 90);
+    const orbTestY = (cursorForOrb.y - areaForOrb.y) > areaForOrb.height / 2
+      ? areaForOrb.y + 24
+      : Math.max(areaForOrb.y + 24, areaForOrb.y + areaForOrb.height - 140);
+    win.setPosition(Math.round(orbTestX), Math.round(orbTestY), false);
+
+    async function sendRealDoubleClick(selector) {
+      const box = await getBox(win, selector);
+      const b = getState(win).bounds;
+      const cx = Math.round(box.x + box.width / 2);
+      const cy = Math.round(box.y + box.height / 2);
+      win.webContents.sendInputEvent({ type: 'mouseDown', x: cx, y: cy, globalX: b.x + cx, globalY: b.y + cy, button: 'left', clickCount: 1 });
+      win.webContents.sendInputEvent({ type: 'mouseUp', x: cx, y: cy, globalX: b.x + cx, globalY: b.y + cy, button: 'left', clickCount: 1 });
+      await sleep(30);
+      win.webContents.sendInputEvent({ type: 'mouseDown', x: cx, y: cy, globalX: b.x + cx, globalY: b.y + cy, button: 'left', clickCount: 2 });
+      win.webContents.sendInputEvent({ type: 'mouseUp', x: cx, y: cy, globalX: b.x + cx, globalY: b.y + cy, button: 'left', clickCount: 2 });
+    }
+
+    await sendRealDoubleClick('#seal');
+    await sleep(140);
     const orbState = getState(win);
-    assert.equal(orbState.bounds.width, 116, 'Double-clicking #seal must collapse to 116x116 orb');
+    assert.equal(orbState.bounds.width, 116, 'Real double-click on #seal must collapse to 116x116 orb');
+
+    await sendRealDoubleClick('#orb');
+    await sleep(140);
+    assert.equal(getState(win).bounds.width, 520, 'Real double-click on #orb must expand back to 520px bar');
+
+    await sendRealDoubleClick('#q');
+    await sleep(80);
+    assert.equal(getState(win).bounds.width, 520, 'Real double-click on #q must select text and NOT collapse to orb');
+
+    // Clear input before testing #lang & #hint double-clicks so #lang does not fire a network lookup.
+    await win.webContents.executeJavaScript('document.getElementById("clear").click()');
+    await sleep(60);
+
+    await sendRealDoubleClick('#lang');
+    await sleep(80);
+    assert.equal(getState(win).bounds.width, 520, 'Real double-click on #lang must toggle pair and NOT collapse to orb');
+
+    // Double-clicking non-interactive search bar chrome (#hint) also collapses to orb, and #orb expands back.
+    await sendRealDoubleClick('#hint');
+    await sleep(140);
+    assert.equal(getState(win).bounds.width, 116, 'Real double-click on non-interactive #hint on search bar must collapse to 116x116 orb');
+
+    await sendRealDoubleClick('#orb');
+    await sleep(140);
+    assert.equal(getState(win).bounds.width, 520, 'Real double-click on #orb must expand back to 520px bar');
+
+    await sendRealDoubleClick('#seal');
+    await sleep(140);
+    assert.equal(getState(win).bounds.width, 116, 'Second real double-click on #seal must collapse to 116x116 orb again');
     win.setPosition(100, 620, false);
     triggerShowSearch();
     await sleep(150);
@@ -391,6 +442,22 @@ function triggerShowSearch() {
       await win.webContents.executeJavaScript('Boolean(document.getElementById("settings-title"))'),
       false,
       'Real Blink mouseUp after dragging #gear must not open Settings',
+    );
+
+    const realSealBox = await getBox(win, '#seal');
+    const rsx = Math.round(realSealBox.x + realSealBox.width / 2);
+    const rsy = Math.round(realSealBox.y + realSealBox.height / 2);
+    const beforeRealSealDrag = getState(win).bounds;
+    win.webContents.sendInputEvent({ type: 'mouseDown', x: rsx, y: rsy, globalX: beforeRealSealDrag.x + rsx, globalY: beforeRealSealDrag.y + rsy, button: 'left', clickCount: 1 });
+    await sleep(10);
+    win.webContents.sendInputEvent({ type: 'mouseMove', x: rsx + 38, y: rsy + 12, globalX: beforeRealSealDrag.x + rsx + 38, globalY: beforeRealSealDrag.y + rsy + 12, button: 'left', modifiers: ['leftButtonDown'] });
+    await sleep(20);
+    win.webContents.sendInputEvent({ type: 'mouseUp', x: rsx + 38, y: rsy + 12, globalX: beforeRealSealDrag.x + rsx + 38, globalY: beforeRealSealDrag.y + rsy + 12, button: 'left', clickCount: 1 });
+    await sleep(40);
+    const afterRealSealDrag = getState(win).bounds;
+    assert(
+      afterRealSealDrag.x > beforeRealSealDrag.x + 15,
+      `Real Blink immediate drag on #seal must move window without waiting 220ms (before=${beforeRealSealDrag.x}, after=${afterRealSealDrag.x})`,
     );
 
     console.log('PASS: startup left-sidebar rescue, desktop-center wake from hidden/moved/orb, long-press search-bar drag (PointerEvent + real Blink sendInputEvent on selected #q & #gear + slow-click + quick-sweep selection), and 4-edge workArea clamping.');

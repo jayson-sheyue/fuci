@@ -1227,12 +1227,6 @@ function trackBarDrag(bar, enabled) {
     };
     if (immediate) {
       arm(false);
-      try {
-        bar.setPointerCapture(event.pointerId);
-        drag.captured = true;
-      } catch {
-        /* fallback to window listener */
-      }
       return;
     }
     drag.timer = setTimeout(() => arm(true), LONG_PRESS_DRAG_MS);
@@ -1350,6 +1344,11 @@ function trackDrag(target, enabled) {
 const cancelBarDrag = trackBarDrag(search, () => !orbMode);
 trackDrag(orb, () => orbMode);
 seal.addEventListener('dblclick', (event) => {
+  event.preventDefault();
+  collapseToOrb();
+});
+search.addEventListener('dblclick', (event) => {
+  if (event.target.closest('input, button:not(#seal), select, textarea, a')) return;
   event.preventDefault();
   collapseToOrb();
 });
