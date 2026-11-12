@@ -1187,6 +1187,7 @@ function trackBarDrag(bar, enabled) {
     } catch {
       /* pointer already released */
     }
+    if (current.pressingSent) window.fuci.setPressing?.(false);
     if (current.draggingSent) window.fuci.setDragging(false);
     if (current.moved) suppressNextClick(bar);
   };
@@ -1204,6 +1205,7 @@ function trackBarDrag(bar, enabled) {
     const onInteractive = Boolean(event.target.closest('input, button, select, textarea, a'));
     const immediate = onSeal || !onInteractive;
     const emptyInput = event.target === input && input.value.length === 0;
+    window.fuci.setPressing?.(true);
     drag = {
       pointerId: event.pointerId,
       startX: event.screenX,
@@ -1215,6 +1217,7 @@ function trackBarDrag(bar, enabled) {
       armed: false,
       fromTimer: false,
       moved: false,
+      pressingSent: true,
       draggingSent: false,
       captured: false,
       selStart: null,
@@ -1290,7 +1293,10 @@ function trackBarDrag(bar, enabled) {
 
   window.addEventListener('pointerup', end);
   window.addEventListener('pointercancel', end);
-  window.addEventListener('blur', () => end());
+  bar.addEventListener('lostpointercapture', end);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) end();
+  });
   return end;
 }
 
@@ -1306,11 +1312,13 @@ function trackDrag(target, enabled) {
     } catch {
       /* pointer already released */
     }
+    if (current.pressingSent) window.fuci.setPressing?.(false);
     if (current.moved) window.fuci.setDragging(false);
   };
   target.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || (event.buttons & 1) === 0 || !enabled()) return;
-    drag = { x: event.screenX, y: event.screenY, moved: false, pointerId: event.pointerId };
+    window.fuci.setPressing?.(true);
+    drag = { x: event.screenX, y: event.screenY, moved: false, pressingSent: true, pointerId: event.pointerId };
     target.setPointerCapture(event.pointerId);
   });
   target.addEventListener('pointermove', (event) => {
@@ -1332,7 +1340,10 @@ function trackDrag(target, enabled) {
   });
   target.addEventListener('pointerup', end);
   target.addEventListener('pointercancel', end);
-  window.addEventListener('blur', () => end());
+  target.addEventListener('lostpointercapture', end);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) end();
+  });
   return end;
 }
 

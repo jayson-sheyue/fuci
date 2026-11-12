@@ -57,6 +57,7 @@ let quitting = false;
 let shortcutLabel = '';
 let lookupJob = null;
 let ignoreMouse = false;
+let pressingWindow = false;
 let draggingWindow = false;
 let orbHovering = false;
 let updateState = { available: false };
@@ -207,6 +208,7 @@ function createWindow() {
 function showWindow() {
   if (!win || win.isDestroyed()) return;
   ignoreMouse = false;
+  pressingWindow = false;
   draggingWindow = false;
   orbHovering = false;
   win.setIgnoreMouseEvents(false);
@@ -226,6 +228,8 @@ function showWindow() {
 
 function hideWindow() {
   if (!win || win.isDestroyed()) return;
+  pressingWindow = false;
+  draggingWindow = false;
   win.hide();
 }
 
@@ -659,13 +663,19 @@ function registerIpc() {
       }
       return;
     }
-    const ignore = draggingWindow ? false : !cursorHitsWidget();
+    const ignore = (draggingWindow || pressingWindow) ? false : !cursorHitsWidget();
     if (ignore === ignoreMouse) return;
     ignoreMouse = ignore;
-    win.setIgnoreMouseEvents(ignore, { forward: true });
+    if (ignore) win.setIgnoreMouseEvents(true, { forward: true });
+    else win.setIgnoreMouseEvents(false);
   }
 
   ipcMain.on('window:ignore-mouse', () => {
+    syncMousePassthrough();
+  });
+
+  ipcMain.on('window:pressing', (_event, active) => {
+    pressingWindow = !!active;
     syncMousePassthrough();
   });
 

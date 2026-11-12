@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 if (!process.versions.electron) {
-  const electronBin = process.env.FUCI_PACKAGED_EXE || require('electron');
+  const electronBin = require('electron');
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
   execFileSync(electronBin, [__filename], {
@@ -179,7 +179,7 @@ function triggerShowSearch() {
     assert.equal(afterQuickSweep.x, beforeQuickSweep.x, 'Quick sweep < 220ms on non-empty #q must not drag window');
     assert.equal(afterQuickSweep.y, beforeQuickSweep.y, 'Quick sweep < 220ms on non-empty #q must not drag window');
 
-    // 3b. Long-press (>= 220ms) on #q + drag MUST move the window!
+    // 3b. Long-press (>= 220ms) on #q + drag MUST move the window (even if panel window blurs mid-hold)!
     await dispatchPointer(win, '#q', 'pointerdown', {
       clientX: qCenterX,
       clientY: qCenterY,
@@ -187,7 +187,9 @@ function triggerShowSearch() {
       screenY: afterQuickSweep.y + qCenterY,
       pointerId: 2,
     });
-    await sleep(260);
+    await sleep(60);
+    await win.webContents.executeJavaScript('window.dispatchEvent(new Event("blur"))');
+    await sleep(200);
     const draggingClass = await win.webContents.executeJavaScript('document.getElementById("search").classList.contains("is-dragging")');
     assert.equal(draggingClass, true, 'Search bar should enter is-dragging visual state after long-press');
     await dispatchPointer(win, 'window', 'pointermove', {

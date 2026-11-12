@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('fuci', {
   setMode: (mode) => ipcRenderer.send('window:mode', mode),
   setIgnoreMouse: (ignore) => ipcRenderer.send('window:ignore-mouse', ignore),
   moveBy: (dx, dy) => ipcRenderer.send('window:move-by', dx, dy),
+  setPressing: (active) => ipcRenderer.send('window:pressing', active),
   setDragging: (active) => ipcRenderer.send('window:dragging', active),
   hideWindow: () => ipcRenderer.send('window:hide'),
   quit: () => ipcRenderer.send('app:quit'),
