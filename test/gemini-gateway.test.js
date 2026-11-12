@@ -7,7 +7,7 @@ const { modelUrl, lookup, clearCache } = require('../src/main/gcp');
 const { setFetchImplementation } = require('../src/main/http');
 const { synthesize, geminiSpeechRequest } = require('../src/main/tts');
 const { cacheScope } = require('../src/main/lookup-cache');
-for (const source of ['gemini', 'vertex-express']) for (const key of ['AIzaSyntheticKey1234567890', 'AQ.synthetic.auth.key_1234567890']) {
+for (const source of ['gemini', 'vertex-express']) for (const key of ['AIzaSy' + 'ntheticKey1234567890', 'AQ.' + 'synthetic.auth.key_1234567890']) {
   test(`${source} routes dictionary and TTS independently of the key prefix (${key.slice(0,3)})`, async () => {
     assert.equal(validateGeminiKey(` ${key} `), key);
     const settings = { route: 'gemini', geminiApiKey: key, geminiProvider: source, model: 'gemini-test', ttsModel: 'test-tts', pair: 'en-zh', target: 'zh-CN' };

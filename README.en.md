@@ -186,3 +186,8 @@ In Settings → Account → API key lite mode, select the service that issued th
 Model access, regions, quotas and billing depend on the service and account. Passing the text check does not verify TTS. Existing TTS model fallbacks stay within the selected service. `npm test` covers both formats and gateways, AUDIO/role, cache separation and redacted errors; live AQ text/TTS calls have not been verified. [Official key guide](https://aistudio.google.com/docs/api-key) · [Express REST](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/express-mode/api-reference).
 
 `FUCI_STAGE_ONLY=1 npm run pack` builds the macOS verification package without replacing the Desktop app. `NODE_PATH=/path/to/playwright/node_modules node test/gemini-gateway.desktop.cjs` runs the isolated desktop gateway check.
+
+## License
+
+Released under the [MIT License](LICENSE).
+

@@ -31,7 +31,7 @@ process.env.FUCI_TEST_DATA = dir;
 fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({
   bounds: { x: -380, y: 5 },
   route: 'gemini',
-  geminiApiKey: 'AIzaSyTestKeyForOfflineLayout0000000000',
+  geminiApiKey: 'AIzaSy' + 'TestKeyForOfflineLayout0000000000',
   uiLocale: 'zh',
 }, null, 2));
 

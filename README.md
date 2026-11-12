@@ -196,3 +196,8 @@ npm run pack:win
 运行 `npm test` 可验证两种密钥格式、两种网关、TTS AUDIO／角色、缓存隔离及错误脱敏。当前未使用真实 AQ 密钥完成线上文本或语音验收；受控响应检查不代表模型在账号上已开放。官方依据：[Gemini 密钥](https://aistudio.google.com/docs/api-key)、[Express REST](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/express-mode/api-reference)、[官方 SDK 默认版本](https://github.com/googleapis/js-genai/blob/main/src/_api_client.ts)。
 
 `FUCI_STAGE_ONLY=1 npm run pack` builds the macOS verification package without replacing the Desktop app. `NODE_PATH=/path/to/playwright/node_modules node test/gemini-gateway.desktop.cjs` runs the isolated desktop gateway check.
+
+## 开源协议
+
+本项目基于 [MIT License](LICENSE) 开源。
+

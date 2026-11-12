@@ -186,3 +186,8 @@ npm run pack:win
 モデル、地域、割り当て、料金はサービスとアカウントに依存します。テキスト接続の成功は TTS の動作保証ではありません。既存の TTS 予備モデルは選択したサービス内でのみ試します。`npm test` で形式、経路、AUDIO/role、キャッシュ分離、エラー秘匿を確認できますが、実際の AQ キーによるオンライン動作は未検証です。[公式キーガイド](https://aistudio.google.com/docs/api-key) · [Express REST](https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/express-mode/api-reference)。
 
 `FUCI_STAGE_ONLY=1 npm run pack` builds the macOS verification package without replacing the Desktop app. `NODE_PATH=/path/to/playwright/node_modules node test/gemini-gateway.desktop.cjs` runs the isolated desktop gateway check.
+
+## ライセンス
+
+[MIT License](LICENSE) のもとで公開されています。
+

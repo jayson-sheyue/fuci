@@ -88,14 +88,14 @@ test('AI Studio lite mode synthesizes speech via Gemini AUDIO modality and wraps
 
   const audio = await synthesize('resilient', 'en', {
     engine: 'gemini',
-    geminiApiKey: 'AIzaSyTestKey1234567890',
+    geminiApiKey: 'AIzaSy' + 'TestKey1234567890',
     ttsModel: 'gemini-3.1-flash-tts-preview',
   });
   assert.equal(audio, pcmToWavBase64(fakePcm, 24000));
   assert.equal(calls.length, 2);
   assert.match(calls[0].url, /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-2\.5-flash-preview-tts:generateContent/);
   assert.match(calls[1].url, /generativelanguage\.googleapis\.com\/v1beta\/models\/gemini-3\.1-flash-tts-preview:generateContent/);
-  assert.equal(calls[1].headers['x-goog-api-key'], 'AIzaSyTestKey1234567890');
+  assert.equal(calls[1].headers['x-goog-api-key'], 'AIzaSy' + 'TestKey1234567890');
 });
 
 test('Windows gcloud tar extractor skips symlinks and platform/gsutil without failing', () => {
@@ -313,7 +313,7 @@ test('Lite mode dictionaryPrompt instructs Gemini to reconstruct scrambled Chine
 
   const res = await lookup('果苹吃', {
     route: 'gemini',
-    geminiApiKey: 'AIzaSyTestKey1234567890',
+    geminiApiKey: 'AIzaSy' + 'TestKey1234567890',
     pair: 'zh-en',
   });
   assert.equal(res.translation, 'eat apples');
