@@ -666,8 +666,7 @@ function registerIpc() {
     const ignore = (draggingWindow || pressingWindow) ? false : !cursorHitsWidget();
     if (ignore === ignoreMouse) return;
     ignoreMouse = ignore;
-    if (ignore) win.setIgnoreMouseEvents(true, { forward: true });
-    else win.setIgnoreMouseEvents(false);
+    win.setIgnoreMouseEvents(ignore);
   }
 
   ipcMain.on('window:ignore-mouse', () => {

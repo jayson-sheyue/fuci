@@ -340,6 +340,16 @@ function triggerShowSearch() {
     assert(Math.abs(wokenFromOrb.bounds.y - expY) <= 2, `Expected wake-from-orb centered y=${expY}, got ${wokenFromOrb.bounds.y}`);
 
     // 8. Real Chromium input pipeline (webContents.sendInputEvent) on selected text in #q and on #gear:
+    // Place window inside workArea away from the live OS cursor so physical mouse movement cannot inject buttons:0 events.
+    const cursorNow = screen.getCursorScreenPoint();
+    const safeArea = screen.getDisplayNearestPoint(cursorNow).workArea;
+    const safeX = (cursorNow.x - safeArea.x) > safeArea.width / 2
+      ? safeArea.x + 24
+      : Math.max(safeArea.x + 24, safeArea.x + safeArea.width - 520 - 90);
+    const safeY = (cursorNow.y - safeArea.y) > safeArea.height / 2
+      ? safeArea.y + 24
+      : Math.max(safeArea.y + 24, safeArea.y + safeArea.height - 140);
+    win.setPosition(Math.round(safeX), Math.round(safeY), false);
     await win.webContents.executeJavaScript(`(() => {
       const q = document.getElementById('q');
       q.value = 'ephemeral';
